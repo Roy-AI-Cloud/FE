@@ -1,0 +1,25 @@
+import React from "react";
+
+const Logo: React.FC = () => {
+  return (
+    <div className="flex items-center space-x-2">
+      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          className="text-white"
+        >
+          <path
+            d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"
+            fill="currentColor"
+          />
+        </svg>
+      </div>
+      <span className="text-2xl font-bold text-gray-800">InfluROI</span>
+    </div>
+  );
+};
+
+export default Logo;
