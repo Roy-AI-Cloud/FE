@@ -4,10 +4,12 @@ import Logo from "../../components/Logo";
 import SearchBar from "../../components/searchBar";
 import FilterTabs from "../../components/list/FilterTabs";
 import InfluencerCard from "../../components/list/InfluencerCard";
+import SkeletonCard from "../../components/list/SkeletonCard";
 import Footer from "../../components/Footer";
 import GradientButton from "../../components/button/LoginButton";
 import SortDropdown from "../../components/button/SortDropdown";
 import DropCategory from "../../components/button/DropCategory";
+import { getHomeYoutuberList, type HomeYoutuber } from "../../apis/apis";
 
 const PeopleList: React.FC = () => {
   const navigate = useNavigate();
@@ -15,91 +17,36 @@ const PeopleList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("전체");
   const [isLoading, setIsLoading] = useState(true);
+  const [influencers, setInfluencers] = useState<HomeYoutuber[]>([]);
 
-  // URL 파라미터에서 mode 확인
-  const isEditMode = new URLSearchParams(location.search).get('mode') === 'edit';
-
-  const influencers = [
-    {
-      id: 1,
-      name: "자연을 향한숨: 1밀크",
-      category: "건강라이프스타일",
-      platforms: ["YouTube", "Instagram"],
-      followers: "368,000",
-      engagement: "6.2%",
-      price: "₩2,000,000",
-    },
-    {
-      id: 2,
-      name: "행복인사이더 마나",
-      category: "뷰티/패션",
-      platforms: ["Instagram", "TikTok"],
-      followers: "425,000",
-      engagement: "7.2%",
-      price: "₩3,500,000",
-    },
-    {
-      id: 3,
-      name: "성건강연구소",
-      category: "건강정보",
-      platforms: ["YouTube"],
-      followers: "158,000",
-      engagement: "8.1%",
-      price: "₩1,500,000",
-    },
-    {
-      id: 4,
-      name: "김민지의 건강한마",
-      category: "라이프스타일",
-      platforms: ["Instagram"],
-      followers: "186,000",
-      engagement: "4.2%",
-      price: "₩500,000",
-    },
-    {
-      id: 5,
-      name: "테크리뷰어 윤",
-      category: "테크/가젯",
-      platforms: ["YouTube", "Instagram"],
-      followers: "582,000",
-      engagement: "6.2%",
-      price: "₩4,200,000",
-    },
-    {
-      id: 6,
-      name: "건강포켓",
-      category: "건강정보",
-      platforms: ["YouTube", "Instagram", "TikTok"],
-      followers: "2,700,000",
-      engagement: "5.9%",
-      price: "₩15,000,000",
-    },
-  ];
-
-  // 로딩 시뮬레이션
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getHomeYoutuberList();
+        setInfluencers(data);
+      } catch (error) {
+        console.error("Error fetching influencers:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, []);
+
+  const isEditMode =
+    new URLSearchParams(location.search).get("mode") === "edit";
 
   const filteredInfluencers = influencers.filter((influencer) => {
     const matchesSearch =
-      influencer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      influencer.channel_title
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       influencer.category.toLowerCase().includes(searchTerm.toLowerCase());
 
     if (activeFilter === "전체") return matchesSearch;
-    if (activeFilter === "YouTube")
-      return (
-        matchesSearch &&
-        influencer.platforms.includes("YouTube")
-      );
-    if (activeFilter === "Instagram")
-      return (
-        matchesSearch &&
-        influencer.platforms.includes("Instagram")
-      );
+    if (activeFilter === "YouTube") return matchesSearch;
+    if (activeFilter === "Instagram") return false;
 
     return matchesSearch;
   });
@@ -112,7 +59,7 @@ const PeopleList: React.FC = () => {
           <div className="flex items-center justify-between">
             <Logo />
             <div className="flex items-center space-x-4">
-              <GradientButton 
+              <GradientButton
                 className="rounded-2xl"
                 onClick={() => navigate("/new-project")}
               >
@@ -211,34 +158,25 @@ const PeopleList: React.FC = () => {
         <div className="grid grid-cols-1 gap-6 mb-12 md:grid-cols-2 lg:grid-cols-3">
           {isLoading
             ? Array.from({ length: 6 }).map((_, index) => (
-                <InfluencerCard
-                  key={index}
-                  name=""
-                  category=""
-                  platforms={[]}
-                  followers=""
-                  engagement=""
-                  price=""
-                  isLoading={true}
-                />
+                <SkeletonCard key={index} />
               ))
-            : // 로딩 완료 후 실제 데이터 표시
-              filteredInfluencers.map((influencer) => (
+            : filteredInfluencers.map((influencer) => (
                 <InfluencerCard
-                  key={influencer.id}
-                  name={influencer.name}
+                  key={influencer.channel_id}
+                  name={influencer.channel_title}
                   category={influencer.category}
-                  platforms={influencer.platforms}
-                  followers={influencer.followers}
-                  engagement={influencer.engagement}
-                  price={influencer.price}
-                  onClick={() => navigate(`/influencer/${influencer.id}`)}
+                  platforms={["YouTube"]}
+                  image={influencer.thumbnail_url}
+                  followers={influencer.subscriber_count.toLocaleString()}
+                  engagement={`${influencer.engagement_rate.toFixed(1)}%`}
+                  price={influencer.estimated_price}
+                  onClick={() =>
+                    navigate(`/influencer/${influencer.channel_id}`)
+                  }
                 />
               ))}
         </div>
       </main>
-
-      {/* 푸터 */}
       <Footer />
     </div>
   );
