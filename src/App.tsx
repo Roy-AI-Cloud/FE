@@ -4,6 +4,7 @@ import LoginPage from "./pages/login";
 import PeopleListPage from "./pages/PeopleList";
 import AdvancedFilterPage from "./pages/advancedFilter";
 import InfluencerDetailPage from "./pages/peopleDetail";
+import NewProject from "./pages/newProject";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/List" element={<PeopleListPage />} />
           <Route path="/advanced-filter" element={<AdvancedFilterPage />} />
           <Route path="/influencer/:id" element={<InfluencerDetailPage />} />
+          <Route path="/new-project" element={<NewProject />} />
         </Routes>
       </div>
     </Router>

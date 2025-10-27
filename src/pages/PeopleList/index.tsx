@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "../../components/Logo";
 import SearchBar from "../../components/searchBar";
 import FilterTabs from "../../components/list/FilterTabs";
 import InfluencerCard from "../../components/list/InfluencerCard";
 import Footer from "../../components/Footer";
 import GradientButton from "../../components/button/LoginButton";
-import DropCategory from "../../components/button/DropCategory";
 import SortDropdown from "../../components/button/SortDropdown";
+import DropCategory from "../../components/button/DropCategory";
 
 const PeopleList: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("전체");
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("");
+
+  // URL 파라미터에서 mode 확인
+  const isEditMode = new URLSearchParams(location.search).get('mode') === 'edit';
 
   const influencers = [
     {
@@ -86,24 +89,19 @@ const PeopleList: React.FC = () => {
       influencer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       influencer.category.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCategory =
-      !selectedCategory || influencer.category.includes(selectedCategory);
-
-    if (activeFilter === "전체") return matchesSearch && matchesCategory;
+    if (activeFilter === "전체") return matchesSearch;
     if (activeFilter === "YouTube")
       return (
         matchesSearch &&
-        matchesCategory &&
         influencer.platforms.includes("YouTube")
       );
     if (activeFilter === "Instagram")
       return (
         matchesSearch &&
-        matchesCategory &&
         influencer.platforms.includes("Instagram")
       );
 
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   return (
@@ -114,8 +112,11 @@ const PeopleList: React.FC = () => {
           <div className="flex items-center justify-between">
             <Logo />
             <div className="flex items-center space-x-4">
-              <GradientButton className="rounded-2xl">
-                + 새 프로젝트
+              <GradientButton 
+                className="rounded-2xl"
+                onClick={() => navigate("/new-project")}
+              >
+                {isEditMode ? "프로젝트 수정" : "+ 새 프로젝트"}
               </GradientButton>
               <button className="p-2 text-gray-400 hover:text-gray-600">
                 <svg
@@ -201,23 +202,8 @@ const PeopleList: React.FC = () => {
 
           {/* 드롭다운 필터 */}
           <div className="flex items-center gap-4">
-            <DropCategory
-              options={[
-                "운동",
-                "일상",
-                "음악",
-                "패션",
-                "뷰티",
-                "푸드",
-                "여행",
-                "IT",
-                "게임",
-                "교육",
-              ]}
-              selectedValue={selectedCategory}
-              onChange={setSelectedCategory}
-            />
-            <SortDropdown />
+            <DropCategory />
+            <SortDropdown isActive={isEditMode} />
           </div>
         </div>
 
