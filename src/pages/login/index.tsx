@@ -15,7 +15,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     console.log("Login attempt:", { email, password, keepLoggedIn });
     // 로그인 성공 시 대시보드로 이동
-    navigate("/List");
+    navigate("/youtube/home-list");
   };
 
   const handleSocialLogin = (provider: "google" | "github") => {
@@ -58,8 +58,18 @@ const LoginPage: React.FC = () => {
               type="email"
               placeholder="example@company.com"
               icon={
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <svg
+                  className="w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
                 </svg>
               }
               value={email}
@@ -72,8 +82,18 @@ const LoginPage: React.FC = () => {
               type="password"
               placeholder="*********"
               icon={
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <svg
+                  className="w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
                 </svg>
               }
               value={password}
@@ -89,7 +109,9 @@ const LoginPage: React.FC = () => {
                   onChange={(e) => setKeepLoggedIn(e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="ml-2 text-sm text-gray-600">로그인 상태 유지</span>
+                <span className="ml-2 text-sm text-gray-600">
+                  로그인 상태 유지
+                </span>
               </label>
               <button
                 type="button"
@@ -106,8 +128,18 @@ const LoginPage: React.FC = () => {
               className="w-full flex items-center justify-center space-x-2"
             >
               <span>로그인</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </GradientButton>
           </form>
@@ -148,7 +180,9 @@ const LoginPage: React.FC = () => {
 
         {/* Footer */}
         <div className="text-center mt-8">
-          <p className="text-xs text-gray-500">© 2025 InfluROI. All rights reserved.</p>
+          <p className="text-xs text-gray-500">
+            © 2025 InfluROI. All rights reserved.
+          </p>
         </div>
       </div>
     </div>

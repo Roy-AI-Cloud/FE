@@ -13,7 +13,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/List" element={<PeopleListPage />} />
+          <Route path="/youtube/home-list" element={<PeopleListPage />} />
           <Route path="/advanced-filter" element={<AdvancedFilterPage />} />
           <Route path="/influencer/:id" element={<InfluencerDetailPage />} />
           <Route path="/new-project" element={<NewProject />} />
