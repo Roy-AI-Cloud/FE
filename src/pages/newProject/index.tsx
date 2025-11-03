@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeroSection from './newProjectComponents/HeroSection.tsx';
 import ProductImagesUpload from './newProjectComponents/ProductImagesUpload.tsx';
+import EvaluationWeight from './newProjectComponents/EvaluationWeight.tsx';
 import FormFields from './newProjectComponents/FormFields.tsx';
 
 interface FormData {
   companyName: string;
   logo: File | null;
+  category: string[];
   brandKeywords: string;
   targetAge: string[];
   targetGender: string[];
@@ -22,6 +24,7 @@ const BrandCampaignForm = () => {
   const [formData, setFormData] = useState<FormData>({
     companyName: '',
     logo: null,
+    category: [],
     brandKeywords: '',
     targetAge: [],
     targetGender: [],
@@ -36,7 +39,7 @@ const BrandCampaignForm = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const toggleSelection = (field: 'targetAge' | 'targetGender' | 'brandTone', value: string) => {
+  const toggleSelection = (field: 'targetAge' | 'targetGender' | 'brandTone' | 'category', value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].includes(value)
@@ -68,6 +71,8 @@ const BrandCampaignForm = () => {
             productImages={formData.productImages}
             onProductImagesChange={(images) => handleInputChange('productImages', images)}
           />
+
+          <EvaluationWeight />
 
           {/* 버튼 그룹 */}
           <div className="pt-4 flex gap-4">

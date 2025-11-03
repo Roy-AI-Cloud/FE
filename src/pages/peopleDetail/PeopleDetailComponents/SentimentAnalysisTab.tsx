@@ -6,8 +6,9 @@ const SentimentAnalysisTab: React.FC = () => {
       {/* 감성 분석 차트 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
         <h3 className="text-2xl font-bold text-gray-900 mb-8">
-          감성 분석 결과
+          댓글 감성 분석 결과
         </h3>
+        <p className="text-gray-600 mt-2 mb-8 text-sm">총 38개 댓글 분석 (3개 영상)</p>
         <div className="flex justify-center">
           <div className="flex gap-24 items-center">
             <div className="text-center">
@@ -16,17 +17,21 @@ const SentimentAnalysisTab: React.FC = () => {
                   85%
                 </span>
               </div>
-              <h4 className="font-semibold text-gray-900 mb-3 text-xl">긍정적</h4>
-              <p className="text-base text-gray-600">
-                대부분의 댓글이 긍정적
-              </p>
+              <h4 className="font-semibold text-gray-900 mb-3 text-xl">긍정적 댓글</h4>
+            </div>
+            <div className="text-center">
+              <div className="w-48 h-48 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-5xl font-bold text-gray-600">
+                  85%
+                </span>
+              </div>
+              <h4 className="font-semibold text-gray-900 mb-3 text-xl">중립적 댓글</h4>
             </div>
             <div className="text-center">
               <div className="w-48 h-48 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-5xl font-bold text-red-600">3%</span>
               </div>
-              <h4 className="font-semibold text-gray-900 mb-3 text-xl">부정적</h4>
-              <p className="text-base text-gray-600">최소한의 부정적 반응</p>
+              <h4 className="font-semibold text-gray-900 mb-3 text-xl">부정적 댓글</h4>
             </div>
           </div>
         </div>
@@ -34,7 +39,7 @@ const SentimentAnalysisTab: React.FC = () => {
 
       {/* 감성 분석 카드 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <div className="grid grid-cols-2 gap-12">
+        <div className="space-y-6">
           {/* 긍정적 카드 */}
           <div>
             <div className="flex justify-between items-center mb-4">
@@ -48,6 +53,21 @@ const SentimentAnalysisTab: React.FC = () => {
               />
             </div>
             <p className="text-base text-gray-600">매우 긍정적인 반응</p>
+          </div>
+
+          {/* 중립적 카드 */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-semibold text-gray-900 text-xl">중립</h4>
+              <span className="text-gray-600 font-bold text-2xl">85%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+              <div
+                className="bg-gray-900 h-4 rounded-full transition-all duration-500"
+                style={{ width: "85%" }}
+              />
+            </div>
+            <p className="text-base text-gray-600">중립적인 반응</p>
           </div>
 
           {/* 부정적 카드 */}
@@ -67,7 +87,7 @@ const SentimentAnalysisTab: React.FC = () => {
         </div>
       </div>
 
-      {/* 감성 분석 상세 - 주요 감성 키워드 */}
+      {/* 감성 분석 상세 - 주요 감성 키워드
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">
           주요 감성 키워드
@@ -113,7 +133,7 @@ const SentimentAnalysisTab: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       
     </div>
