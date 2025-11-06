@@ -9,30 +9,15 @@ import Footer from "../../components/Footer";
 import GradientButton from "../../components/button/LoginButton";
 import SortDropdown from "../../components/button/SortDropdown";
 import DropCategory from "../../components/button/DropCategory";
-import { getHomeYoutuberList, type HomeYoutuber } from "../../apis/apis";
+import { useHomeYoutubers } from "../../hooks/useYoutubersList";
 
 const PeopleList: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("전체");
-  const [isLoading, setIsLoading] = useState(true);
-  const [influencers, setInfluencers] = useState<HomeYoutuber[]>([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const data = await getHomeYoutuberList();
-        setInfluencers(data);
-      } catch (error) {
-        console.error("Error fetching influencers:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const { data: influencers = [], isLoading } = useHomeYoutubers();
 
   const isEditMode =
     new URLSearchParams(location.search).get("mode") === "edit";

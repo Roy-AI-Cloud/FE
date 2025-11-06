@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import GradientButton from "../../components/button/LoginButton";
 import Footer from "../../components/Footer";
 import ContentTab from "./PeopleDetailComponents/ContentTab";
@@ -11,6 +11,7 @@ import InstagramIcon from "../../assets/instaIcon.svg";
 
 const InfluencerDetailPage: React.FC = () => {
   const navigate = useNavigate();
+  const { channelId } = useParams();
   const [activeTab, setActiveTab] = useState("콘텐츠");
 
   const tabs = ["콘텐츠", "성과 지표", "ROI 분석", "감성 분석"];

@@ -31,7 +31,7 @@ export default function EvaluationWeight() {
 
   return (
     <div className="w-full max-w-4xl p-6 bg-white rounded-lg shadow-sm">
-      <h2 className="text-xl font-semibold mb-6">2. 평가 가중치 설정</h2>
+      <h2 className="text-xl font-semibold mb-6"> 평가 가중치 설정</h2>
       
       <div className="space-y-8">
         {sliders.map(({ key, label, color }) => (
