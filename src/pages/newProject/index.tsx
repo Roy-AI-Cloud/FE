@@ -4,6 +4,7 @@ import HeroSection from './newProjectComponents/HeroSection.tsx';
 import ProductImagesUpload from './newProjectComponents/ProductImagesUpload.tsx';
 import EvaluationWeight from './newProjectComponents/EvaluationWeight.tsx';
 import FormFields from './newProjectComponents/FormFields.tsx';
+import { saveBrand, type BrandInfo } from '../../utils/brandStorage.ts';
 
 interface FormData {
   companyName: string;
@@ -48,10 +49,61 @@ const BrandCampaignForm = () => {
     }));
   };
 
-  const handleSubmit = () => {
+  // File을 Base64로 변환하는 함수
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleSubmit = async () => {
     console.log('Form submitted:', formData);
-    // AI 분석 로직 실행
-    navigate('/List?mode=edit');
+    try {
+      // 1. 로고를 Base64로 변환
+      let logoBase64 = '';
+      if (formData.logo) {
+        logoBase64 = await convertFileToBase64(formData.logo);
+      }
+
+      // 2. 제품 이미지들도 Base64로 변환 (첫 번째 이미지만)
+      let productImageBase64 = '';
+      if (formData.productImages.length > 0) {
+        productImageBase64 = await convertFileToBase64(formData.productImages[0]);
+      }
+
+      // 3. API 형식에 맞게 변환
+      const brandData: BrandInfo = {
+        brand_name: formData.companyName,
+        brand_description: formData.productDescription,
+        brand_tone: formData.brandTone.join(', '),        // 배열 → 문자열
+        brand_category: formData.category.join(', '),     // 배열 → 문자열
+        brand_image_base64: logoBase64,
+        brand_image_url: '',
+        campaign_goal: formData.campaignGoal,
+        product_description: formData.productDescription,
+        product_image_base64: productImageBase64,
+        product_image_url: '',
+        // 가중치 (나중에 EvaluationWeight 컴포넌트에서 받아올 예정)
+        weight_brand_image: 40,
+        weight_sentiment: 30,
+        weight_roi: 30,
+      };
+
+      // 4. 로컬스토리지에 저장
+      saveBrand(brandData);
+      
+      console.log('✅ 브랜드 정보 저장 완료:', brandData);
+      
+      // 5. 피플리스트로 이동
+      navigate('/youtube/home-list?mode=edit');
+      
+    } catch (error) {
+      console.error('❌ 저장 실패:', error);
+      alert('브랜드 정보 저장에 실패했습니다.');
+    }
   };
 
   return (

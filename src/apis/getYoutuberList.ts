@@ -40,7 +40,7 @@ export const getHomeYoutuberList = async (): Promise<HomeYoutuber[]> => {
   const response = await fetch(apiUrl, {
     method: "get",
     headers: {
-      "content-Type": "application/json",
+      "Content-Type": "application/json",
     },
   });
 

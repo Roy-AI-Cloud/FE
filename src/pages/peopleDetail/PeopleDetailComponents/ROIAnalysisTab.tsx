@@ -1,38 +1,72 @@
 import React from "react";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
+import { useParams } from 'react-router-dom';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   Cell
 } from 'recharts';
+import { useBrandCompatibility } from '../../../hooks/useBrandAnalysis';
 
 const ROIAnalysisTab: React.FC = () => {
+
+  // url 에서 channelId 가져오기
+  const { channelId } = useParams();
+
+  // api 호출
+  const { data: apiData, isLoading, error } = useBrandCompatibility(channelId || '');
+
+  // 로딩 중일 때
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <p className="ml-4 text-gray-600">브랜드 호환성 분석 중...</p>
+      </div>
+    );
+  }
+
+  // 에러 발생하면
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+        <p className="text-red-600 font-medium">분석 실패</p>
+        <p className="text-red-500 mt-2">{error.message}</p>
+      </div>
+    );
+  }
+
+  // 차트 데이터 (API에서 가져온 base_scores 사용)
   const data = [
-    { name: "브랜드 적합도", value: 38.9 },
-    { name: "감성 분석", value: 75.0 },
-    { name: "ROI 효율", value: 98.9 },
+    { name: "브랜드 적합도", value: apiData?.base_scores.brand_image || 0 },
+    { name: "감성 분석", value: apiData?.base_scores.sentiment || 0 },
+    { name: "ROI 효율", value: apiData?.base_scores.roi || 0 },
   ];
+
+  // 가중치 적용된 종합 평가 (comparisons[0] 사용)
+  const overallEvaluation = apiData?.comparisons[0] ? {
+    grade: apiData.comparisons[0].grade as 'A' | 'B' | 'C' | 'D',
+    score: Math.round(apiData.comparisons[0].total_score),
+    message: apiData.comparisons[0].recommendation,
+  } : {
+    grade: 'D' as 'A' | 'B' | 'C' | 'D',
+    score: 0,
+    message: '데이터 없음',
+  };
 
   // 단색 색상
   const barColors = ["#667eea", "#f093fb", "#4facfe"];
 
-  // ROI 요약 메트릭
+  // ROI 요약 메트릭 (나중에 API에서 가져온 값 사용)
   const roiSummary = {
     views: 324000,
     engagements: 18176,
     cost: 2000000,
     engagementRate: 5.61,
-  };
-
-  // ROI 종합 평가 (API 연동 예정)
-  const overallEvaluation = {
-    grade: 'B' as 'A' | 'B' | 'C' | 'D',
-    score: 72,
-    message: '⚠️ 보통 수준. 신중한 검토가 필요합니다.',
   };
 
   const gradeColorClasses: Record<'A' | 'B' | 'C' | 'D', string> = {
@@ -42,7 +76,7 @@ const ROIAnalysisTab: React.FC = () => {
     D: 'bg-red-100 text-red-700 border-red-200',
   };
 
-  const summaryAccentClasses: Record<'A' | 'B' | 'C' | 'D', { container: string; chip: string; } > = {
+  const summaryAccentClasses: Record<'A' | 'B' | 'C' | 'D', { container: string; chip: string; }> = {
     A: { container: 'from-green-50 border-green-200', chip: 'bg-green-100 text-green-700' },
     B: { container: 'from-blue-50 border-blue-200', chip: 'bg-blue-100 text-blue-700' },
     C: { container: 'from-yellow-50 border-yellow-200', chip: 'bg-yellow-100 text-yellow-700' },
@@ -56,7 +90,7 @@ const ROIAnalysisTab: React.FC = () => {
         <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
           <p className="text-gray-600 mb-1">{payload[0].name}</p>
           <p className="text-2xl font-bold text-gray-900">
-            {payload[0].value.toLocaleString()}
+            {payload[0].value.toFixed(1)}
           </p>
         </div>
       );
@@ -137,12 +171,12 @@ const ROIAnalysisTab: React.FC = () => {
           </div>
           <p className="text-xs text-gray-500 mb-2">CLIP + Sentence-BERT</p>
           <div className="text-2xl font-bold text-gray-900 mb-2">
-            38.9 / 100
+            {apiData?.base_scores.brand_image.toFixed(1) || 0} / 100
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
             <div
               className="bg-blue-500 h-2 rounded-full"
-              style={{ width: "30%" }}
+              style={{ width: '${apiData?.image_similarity || 0}%' }}
             />
           </div>
         </div>
@@ -168,7 +202,7 @@ const ROIAnalysisTab: React.FC = () => {
           </div>
           <p className="text-xs text-gray-500 mb-2">KoBERT 기반</p>
           <div className="text-2xl font-bold text-gray-900 mb-2">
-            75.0 / 100
+            {apiData?.base_scores.sentiment.toFixed(1) || 0} / 100
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
             <div
@@ -199,7 +233,7 @@ const ROIAnalysisTab: React.FC = () => {
           </div>
           <p className="text-xs text-gray-500 mb-2">참여율 기반</p>
           <div className="text-2xl font-bold text-gray-900 mb-2">
-            98.9 / 100
+            {apiData?.base_scores.roi.toFixed(1) || 0} / 100
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
             <div
@@ -224,26 +258,26 @@ const ROIAnalysisTab: React.FC = () => {
             margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
             barCategoryGap="25%"
           >
-            <CartesianGrid 
-              strokeDasharray="3 3" 
+            <CartesianGrid
+              strokeDasharray="3 3"
               stroke="#e5e7eb"
               opacity={0.5}
             />
-            <XAxis 
-              dataKey="name" 
+            <XAxis
+              dataKey="name"
               tick={{ fill: '#6b7280', fontSize: 12 }}
               tickLine={{ stroke: '#d1d5db' }}
               axisLine={{ stroke: '#d1d5db' }}
             />
-            <YAxis 
+            <YAxis
               tick={{ fill: '#6b7280', fontSize: 12 }}
               tickLine={{ stroke: '#d1d5db' }}
               axisLine={{ stroke: '#d1d5db' }}
               tickFormatter={(value) => `${value}%`}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Bar 
-              dataKey="value" 
+            <Bar
+              dataKey="value"
               radius={[8, 8, 0, 0]}
               barSize={200}
               animationDuration={1500}
@@ -284,7 +318,7 @@ const ROIAnalysisTab: React.FC = () => {
           ))}
         </div>
       </div>
-      
+
     </div>
   );
 };
