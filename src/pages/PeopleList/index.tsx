@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "../../components/Logo";
 import SearchBar from "../../components/searchBar";
@@ -46,7 +46,11 @@ const PeopleList: React.FC = () => {
             <div className="flex items-center space-x-4">
               <GradientButton
                 className="rounded-2xl"
-                onClick={() => navigate("/new-project")}
+                onClick={() =>
+                  navigate("/new-project", {
+                    state: { backgroundLocation: location },
+                  })
+                }
               >
                 {isEditMode ? "프로젝트 수정" : "+ 새 프로젝트"}
               </GradientButton>
@@ -114,7 +118,7 @@ const PeopleList: React.FC = () => {
         </div>
 
         {/* 검색 및 필터 */}
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
+        <div className="p-6 mb-8 bg-white rounded-lg shadow-sm">
           {/* 검색바 + 필터 탭 */}
           <div className="flex flex-col gap-4 mb-6 lg:flex-row">
             <div className="flex-1">
