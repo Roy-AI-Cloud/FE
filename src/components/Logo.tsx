@@ -17,7 +17,7 @@ const Logo: React.FC = () => {
           />
         </svg>
       </div>
-      <span className="text-2xl font-bold text-gray-800">InfluROI</span>
+      <span className="text-2xl font-bold text-gray-800">InfloI</span>
     </div>
   );
 };

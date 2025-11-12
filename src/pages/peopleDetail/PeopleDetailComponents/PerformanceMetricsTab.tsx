@@ -25,8 +25,8 @@ const PerformanceMetricsTab: React.FC = () => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 rounded-lg shadow-md border border-gray-200">
-          <p className="font-medium text-gray-900 mb-2">{label}</p>
+        <div className="p-3 bg-white border border-gray-200 rounded-lg shadow-md">
+          <p className="mb-2 font-medium text-gray-900">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p
               key={index}
@@ -45,8 +45,8 @@ const PerformanceMetricsTab: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* 조회수 & 참여율 추이 차트 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">
+      <div className="p-8 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <h3 className="mb-6 text-xl font-bold text-gray-900">
           조회수 & 참여율 추이
         </h3>
         <ResponsiveContainer width="100%" height={400}>
@@ -113,7 +113,8 @@ const PerformanceMetricsTab: React.FC = () => {
       </div>
 
       {/* 성과 지표 카드들 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {/*평균 조회수*/}
         <MetricCard
           title="평균 조회수"
           value="22,019"
@@ -141,6 +142,7 @@ const PerformanceMetricsTab: React.FC = () => {
           }
           isPositive={true}
         />
+        {/*평균 좋아요*/}
         <MetricCard
           title="평균 좋아요"
           value="1,761.52"
@@ -162,6 +164,7 @@ const PerformanceMetricsTab: React.FC = () => {
           }
           isPositive={true}
         />
+        {/*평균 댓글*/}
         <MetricCard
           title="평균 댓글"
           value="660.57"
