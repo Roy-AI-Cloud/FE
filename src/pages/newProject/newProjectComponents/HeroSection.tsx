@@ -1,5 +1,9 @@
+import HeaderLeftBack from "../../../components/button/HeaderLeftBack";
+
 const HeroSection = () => {
     return (
+        <>
+        <HeaderLeftBack/>
         <div className="flex flex-col items-center gap-4 text-center mb-12">
             <h1 className="text-2xl font-medium text-blue-600 tracking-tight">
                 Roy
@@ -11,6 +15,7 @@ const HeroSection = () => {
                 AI 기반 ROI 분석으로 가장 효과적인 마케팅 파트너를 추천해드립니다
             </p>
         </div>
+        </>
     );
 };
 

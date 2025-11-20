@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useParams } from "react-router-dom";
 import Footer from "../../components/Footer";
 import ContentTab from "./PeopleDetailComponents/ContentTab";
 import PerformanceMetricsTab from "./PeopleDetailComponents/PerformanceMetricsTab";
@@ -6,8 +7,13 @@ import ROIAnalysisTab from "./PeopleDetailComponents/ROIAnalysisTab";
 import SentimentAnalysisTab from "./PeopleDetailComponents/SentimentAnalysisTab";
 import Description from "./PeopleDetailComponents/Description";
 import DetailHeader from "./PeopleDetailComponents/DetailHeader";
+import { useYoutuberProfile } from "../../hooks/useYoutuberProfile";
 
 const InfluencerDetailPage: React.FC = () => {
+  const { channelId } = useParams<{ channelId: string }>();
+  const { data: profile, isLoading, error } = useYoutuberProfile(
+    channelId || ""
+  );
   const [activeTab, setActiveTab] = useState("콘텐츠");
 
   const tabs = ["콘텐츠", "성과 지표", "ROI 분석", "감성 분석"];
@@ -42,8 +48,20 @@ const InfluencerDetailPage: React.FC = () => {
       <DetailHeader />
       {/* 메인 콘텐츠 */}
       <main className="px-6 py-8 mx-auto max-w-7xl">
+        {/* 에러 메시지 */}
+        {error && (
+          <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-6">
+            <p className="text-red-600 font-medium">
+              프로필 정보를 불러오는 중 오류가 발생했습니다
+            </p>
+            <p className="text-red-500 text-sm mt-2">
+              {error instanceof Error ? error.message : "알 수 없는 오류"}
+            </p>
+          </div>
+        )}
+
         {/*채널 설명*/}
-        <Description />
+        <Description profile={profile} isLoading={isLoading} />
         {/* 탭 네비게이션 */}
         <div className="mb-8 bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="flex border-b border-gray-200">
