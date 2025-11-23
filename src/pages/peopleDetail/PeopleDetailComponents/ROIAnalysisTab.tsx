@@ -1,5 +1,4 @@
-import React from "react";
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -10,22 +9,57 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
-import { useBrandCompatibility } from '../../../hooks/useBrandAnalysis';
+import { estimate, type EstimateResponse } from '../../../apis/Estimate';
 
-const ROIAnalysisTab: React.FC = () => {
+interface ROIAnalysisTabProps {
+  projectId: string;
+  channelId: string;
+}
 
-  // url 에서 channelId 가져오기
-  const { channelId } = useParams();
+const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
+  projectId,
+  channelId,
+}) => {
+  const [estimateData, setEstimateData] = useState<EstimateResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // api 호출
-  const { data: apiData, isLoading, error } = useBrandCompatibility(channelId || '');
+  // ROI 추정 API 호출
+  useEffect(() => {
+    const fetchEstimateData = async () => {
+      if (!projectId || !channelId) {
+        setError("프로젝트 ID와 채널 ID가 필요합니다.");
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        console.log("ROI 추정 API 호출:", { projectId, channelId });
+        const data = await estimate({
+          project_id: projectId,
+          channel_id: channelId,
+        });
+        setEstimateData(data);
+        console.log("ROI 추정 데이터 로드 성공:", data);
+      } catch (err) {
+        console.error("ROI 추정 실패:", err);
+        setError(err instanceof Error ? err.message : "ROI 추정에 실패했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEstimateData();
+  }, [projectId, channelId]);
 
   // 로딩 중일 때
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <p className="ml-4 text-gray-600">브랜드 호환성 분석 중...</p>
+        <p className="ml-4 text-gray-600">ROI 추정 중...</p>
       </div>
     );
   }
@@ -34,39 +68,51 @@ const ROIAnalysisTab: React.FC = () => {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-        <p className="text-red-600 font-medium">분석 실패</p>
-        <p className="text-red-500 mt-2">{error.message}</p>
+        <p className="text-red-600 font-medium">ROI 추정 실패</p>
+        <p className="text-red-500 mt-2">{error}</p>
       </div>
     );
   }
 
-  // 차트 데이터 (API에서 가져온 base_scores 사용)
+  if (!estimateData) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+        <p className="text-gray-600">ROI 추정 데이터가 없습니다.</p>
+      </div>
+    );
+  }
+
+  // 차트 데이터 (API에서 가져온 estimate 데이터 사용)
   const data = [
-    { name: "브랜드 적합도", value: apiData?.base_scores.brand_image || 0 },
-    { name: "감성 분석", value: apiData?.base_scores.sentiment || 0 },
-    { name: "ROI 효율", value: apiData?.base_scores.roi || 0 },
+    { name: "평가 점수", value: estimateData.score },
+    { name: "예상 조회수", value: Math.round(estimateData.estimated_views / 1000) }, // 천 단위로 변환
+    { name: "예상 참여율", value: estimateData.estimated_engagement },
   ];
 
-  // 가중치 적용된 종합 평가 (comparisons[0] 사용)
-  const overallEvaluation = apiData?.comparisons[0] ? {
-    grade: apiData.comparisons[0].grade as 'A' | 'B' | 'C' | 'D',
-    score: Math.round(apiData.comparisons[0].total_score),
-    message: apiData.comparisons[0].recommendation,
-  } : {
-    grade: 'D' as 'A' | 'B' | 'C' | 'D',
-    score: 0,
-    message: '데이터 없음',
+  // 점수에 따른 등급 계산
+  const getGrade = (score: number): 'A' | 'B' | 'C' | 'D' => {
+    if (score >= 80) return 'A';
+    if (score >= 60) return 'B';
+    if (score >= 40) return 'C';
+    return 'D';
+  };
+
+  const overallEvaluation = {
+    grade: getGrade(estimateData.score),
+    score: Math.round(estimateData.score),
+    message: estimateData.score >= 70 ? '우수한 ROI 예상' : estimateData.score >= 50 ? '양호한 ROI 예상' : 'ROI 개선 필요',
   };
 
   // 단색 색상
   const barColors = ["#667eea", "#f093fb", "#4facfe"];
 
-  // ROI 요약 메트릭 (나중에 API에서 가져온 값 사용)
+  // ROI 요약 메트릭 (API에서 가져온 값 사용)
   const roiSummary = {
-    views: 324000,
-    engagements: 18176,
-    cost: 2000000,
-    engagementRate: 5.61,
+    views: estimateData.estimated_views,
+    engagements: estimateData.estimated_engagement,
+    cost: estimateData.estimated_cost,
+    engagementRate: estimateData.estimated_engagement,
+    cpm: estimateData.cpm,
   };
 
   const gradeColorClasses: Record<'A' | 'B' | 'C' | 'D', string> = {
@@ -132,12 +178,21 @@ const ROIAnalysisTab: React.FC = () => {
 
             <div className="flex items-center gap-2 text-gray-900">
               <span className="text-sm text-gray-600">예상 비용</span>
-              <span className="font-semibold text-blue-600">{`₩${roiSummary.cost.toLocaleString()}`}</span>
+              <span className="font-semibold text-blue-600">
+                {typeof roiSummary.cost === 'string' 
+                  ? roiSummary.cost 
+                  : `₩${Number(roiSummary.cost).toLocaleString()}`}
+              </span>
             </div>
 
             <div className="flex items-center gap-2 text-gray-900">
               <span className="text-sm text-gray-600">참여율</span>
               <span className="font-semibold">{`${roiSummary.engagementRate.toFixed(2)}%`}</span>
+            </div>
+
+            <div className="flex items-center gap-2 text-gray-900">
+              <span className="text-sm text-gray-600">CPM</span>
+              <span className="font-semibold">{`₩${roiSummary.cpm.toLocaleString()}`}</span>
             </div>
           </div>
         </div>
@@ -169,14 +224,14 @@ const ROIAnalysisTab: React.FC = () => {
               />
             </svg>
           </div>
-          <p className="text-xs text-gray-500 mb-2">CLIP + Sentence-BERT</p>
+          <p className="text-xs text-gray-500 mb-2">ROI 평가 점수</p>
           <div className="text-2xl font-bold text-gray-900 mb-2">
-            {apiData?.base_scores.brand_image.toFixed(1) || 0} / 100
+            {estimateData.score.toFixed(1)} / 100
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
             <div
               className="bg-blue-500 h-2 rounded-full"
-              style={{ width: '${apiData?.image_similarity || 0}%' }}
+              style={{ width: `${estimateData.score}%` }}
             />
           </div>
         </div>
@@ -184,7 +239,7 @@ const ROIAnalysisTab: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-gray-700">
-              감성 분석
+              예상 조회수
             </h3>
             <svg
               className="w-5 h-5 text-green-500"
@@ -196,18 +251,24 @@ const ROIAnalysisTab: React.FC = () => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
               />
             </svg>
           </div>
-          <p className="text-xs text-gray-500 mb-2">KoBERT 기반</p>
+          <p className="text-xs text-gray-500 mb-2">참여율 기반 추정</p>
           <div className="text-2xl font-bold text-gray-900 mb-2">
-            {apiData?.base_scores.sentiment.toFixed(1) || 0} / 100
+            {estimateData.estimated_views.toLocaleString()}
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
             <div
               className="bg-green-500 h-2 rounded-full"
-              style={{ width: "22%" }}
+              style={{ width: `${Math.min((estimateData.estimated_views / 100000) * 100, 100)}%` }}
             />
           </div>
         </div>
@@ -215,7 +276,7 @@ const ROIAnalysisTab: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-gray-700">
-              ROI 효율
+              예상 참여율
             </h3>
             <svg
               className="w-5 h-5 text-orange-500"
@@ -233,12 +294,12 @@ const ROIAnalysisTab: React.FC = () => {
           </div>
           <p className="text-xs text-gray-500 mb-2">참여율 기반</p>
           <div className="text-2xl font-bold text-gray-900 mb-2">
-            {apiData?.base_scores.roi.toFixed(1) || 0} / 100
+            {estimateData.estimated_engagement.toFixed(2)}%
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
             <div
               className="bg-orange-500 h-2 rounded-full"
-              style={{ width: "6%" }}
+              style={{ width: `${Math.min(estimateData.estimated_engagement * 10, 100)}%` }}
             />
           </div>
         </div>

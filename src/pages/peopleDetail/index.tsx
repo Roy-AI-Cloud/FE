@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import Footer from "../../components/Footer";
 import ContentTab from "./PeopleDetailComponents/ContentTab";
 import PerformanceMetricsTab from "./PeopleDetailComponents/PerformanceMetricsTab";
@@ -8,13 +8,51 @@ import SentimentAnalysisTab from "./PeopleDetailComponents/SentimentAnalysisTab"
 import Description from "./PeopleDetailComponents/Description";
 import DetailHeader from "./PeopleDetailComponents/DetailHeader";
 import { useYoutuberProfile } from "../../hooks/useYoutuberProfile";
+import { useProjectList } from "../../hooks/useProjectList";
 
 const InfluencerDetailPage: React.FC = () => {
   const { channelId } = useParams<{ channelId: string }>();
-  const { data: profile, isLoading, error } = useYoutuberProfile(
-    channelId || ""
-  );
-  const [activeTab, setActiveTab] = useState("콘텐츠");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    data: profile,
+    isLoading,
+    error,
+  } = useYoutuberProfile(channelId || "");
+  const { data: projects = [] } = useProjectList();
+
+  // 가장 최근 프로젝트 ID 가져오기 (또는 URL에서 projectId 가져오기)
+  const projectId =
+    searchParams.get("projectId") || projects[0]?.project_id || "";
+
+  // URL에서 탭 정보 읽기
+  const tabFromUrl = searchParams.get("tab") || "콘텐츠";
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+
+  // 탭 변경 시 URL 업데이트
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    const tabMap: Record<string, string> = {
+      콘텐츠: "content",
+      "성과 지표": "performance",
+      "ROI 분석": "roi-analysis",
+      "감성 분석": "sentiment",
+    };
+    setSearchParams({ tab: tabMap[tab] || "content" });
+  };
+
+  // URL 변경 시 탭 업데이트
+  useEffect(() => {
+    const tabMap: Record<string, string> = {
+      content: "콘텐츠",
+      performance: "성과 지표",
+      "roi-analysis": "ROI 분석",
+      sentiment: "감성 분석",
+    };
+    const tab = searchParams.get("tab");
+    if (tab && tabMap[tab]) {
+      setActiveTab(tabMap[tab]);
+    }
+  }, [searchParams]);
 
   const tabs = ["콘텐츠", "성과 지표", "ROI 분석", "감성 분석"];
 
@@ -68,7 +106,7 @@ const InfluencerDetailPage: React.FC = () => {
             {tabs.map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => handleTabChange(tab)}
                 className={`flex-1 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab
                     ? "border-blue-500 text-blue-600"
@@ -89,8 +127,15 @@ const InfluencerDetailPage: React.FC = () => {
           />
         )}
 
-        {activeTab === "성과 지표" && <PerformanceMetricsTab />}
-        {activeTab === "ROI 분석" && <ROIAnalysisTab />}
+        {activeTab === "성과 지표" && (
+          <PerformanceMetricsTab
+            projectId={projectId}
+            channelId={channelId || ""}
+          />
+        )}
+        {activeTab === "ROI 분석" && (
+          <ROIAnalysisTab projectId={projectId} channelId={channelId || ""} />
+        )}
         {activeTab === "감성 분석" && <SentimentAnalysisTab />}
       </main>
       <Footer />

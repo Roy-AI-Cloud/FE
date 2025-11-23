@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import Logo from "../../components/Logo";
 import SearchBar from "../../components/searchBar";
 import FilterTabs from "../../components/list/FilterTabs";
 import InfluencerCard from "../../components/list/InfluencerCard";
 import SkeletonCard from "../../components/list/SkeletonCard";
 import Footer from "../../components/Footer";
-import GradientButton from "../../components/button/LoginButton";
 import SortDropdown from "../../components/button/SortDropdown";
 import DropCategory from "../../components/button/DropCategory";
 import Pagination from "../../components/button/Pagination";
 import { useHomeYoutubers } from "../../hooks/useYoutubersList";
 import { getSortedYoutubers } from "../../apis/getYoutuberList";
 import type { HomeYoutuber } from "../../apis/getYoutuberList";
+import { search } from "../../apis/search";
+import Header from "../../components/Header";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -25,6 +25,9 @@ const PeopleList: React.FC = () => {
   const [sortOption, setSortOption] = useState("기본순");
   const [isSortLoading, setIsSortLoading] = useState(false);
   const [sortError, setSortError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const { data, isLoading, error } = useHomeYoutubers(50);
   const [baseInfluencers, setBaseInfluencers] = useState<HomeYoutuber[]>([]);
   const [displayInfluencers, setDisplayInfluencers] = useState<HomeYoutuber[]>(
@@ -42,6 +45,16 @@ const PeopleList: React.FC = () => {
 
   // 필터링된 인플루언서 목록
   const filteredInfluencers = useMemo(() => {
+    // 검색 모드일 때는 클라이언트 사이드 검색 필터링 건너뛰기 (API에서 이미 필터링됨)
+    if (isSearchMode) {
+      // 플랫폼 필터만 적용
+      if (activeFilter === "Instagram") {
+        return []; // Instagram은 현재 지원하지 않음
+      }
+      return displayInfluencers; // 검색 결과 그대로 반환
+    }
+
+    // 기본 모드: 클라이언트 사이드 필터링
     return displayInfluencers.filter((influencer: HomeYoutuber) => {
       const matchesSearch =
         influencer.channel_title
@@ -55,7 +68,7 @@ const PeopleList: React.FC = () => {
 
       return matchesSearch;
     });
-  }, [displayInfluencers, searchTerm, activeFilter]);
+  }, [displayInfluencers, searchTerm, activeFilter, isSearchMode]);
 
   const totalPages = Math.ceil(filteredInfluencers.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -69,6 +82,60 @@ const PeopleList: React.FC = () => {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSearch = async () => {
+    const trimmedKeyword = searchTerm.trim();
+
+    if (!trimmedKeyword) {
+      // 검색어가 비어있으면 기본 목록으로 복원
+      setDisplayInfluencers(baseInfluencers);
+      setSearchError(null);
+      setIsSearchMode(false); // 검색 모드 해제
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError(null);
+    setCurrentPage(1);
+    setIsSearchMode(true); // 검색 모드 활성화
+
+    try {
+      console.log("검색 시작:", trimmedKeyword);
+      const searchResults = await search({
+        keyword: trimmedKeyword,
+        top_n: 200,
+        region: "KR",
+        lang: "ko",
+      });
+
+      console.log("API 검색 결과 (원본):", searchResults);
+
+      // SearchResult를 HomeYoutuber 형식으로 변환
+      const convertedResults: HomeYoutuber[] = searchResults.map((item) => ({
+        channel_id: item.channel_id,
+        channel_title: item.title,
+        subscriber_count: item.subscriber_count,
+        thumbnail_url: item.thumbnail_url,
+        category: item.category,
+        engagement_rate: item.engagement_rate,
+        estimated_price: item.estimated_price || "가격 문의",
+      }));
+
+      console.log("검색 완료:", convertedResults.length, "개");
+      console.log("변환된 결과:", convertedResults);
+      setDisplayInfluencers(convertedResults);
+    } catch (err) {
+      console.error("검색 실패:", err);
+      const message =
+        err instanceof Error ? err.message : "검색 중 오류가 발생했습니다.";
+      setSearchError(message);
+      // 에러 발생 시 기본 목록으로 복원
+      setDisplayInfluencers(baseInfluencers);
+      setIsSearchMode(false); // 검색 모드 해제
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleSortChange = async (value: string) => {
@@ -86,6 +153,7 @@ const PeopleList: React.FC = () => {
     if (value === "기본순") {
       // 기본순으로 돌아가기
       setDisplayInfluencers(baseInfluencers);
+      setIsSearchMode(false); // 검색 모드 해제
       return;
     }
 
@@ -117,75 +185,11 @@ const PeopleList: React.FC = () => {
     }
   };
 
-  const isListLoading = isLoading || isSortLoading;
+  const isListLoading = isLoading || isSortLoading || isSearching;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="px-6 py-4 mx-auto max-w-7xl">
-          <div className="flex items-center justify-between">
-            <Logo />
-            <div className="flex items-center space-x-4">
-              <GradientButton
-                className="rounded-2xl"
-                onClick={() => navigate("/new-project")}
-              >
-                {isEditMode ? "프로젝트 수정" : "+ 새 프로젝트"}
-              </GradientButton>
-              <button className="p-2 text-gray-400 hover:text-gray-600">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 17h5l-5 5-5-5h5v-5a7.5 7.5 0 1 0-15 0v5h5l-5 5-5-5h5v-5a7.5 7.5 0 1 0 15 0v5z"
-                  />
-                </svg>
-              </button>
-              <button className="p-2 text-gray-400 hover:text-gray-600">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </button>
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-400">
-                  <span className="text-sm font-medium text-white">U</span>
-                </div>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+      <Header />
       {/* 메인 콘텐츠 */}
       <main className="px-6 py-8 mx-auto max-w-7xl">
         {/* 페이지 제목 */}
@@ -197,11 +201,16 @@ const PeopleList: React.FC = () => {
         </div>
 
         {/* 검색 및 필터 */}
-        <div className="p-6 mb-8 bg-white rounded-lg shadow-sm">
+        <div className="p-6 mb-8 bg-white rounded-lg shadow-sm space-y-4">
           {/* 검색바 + 필터 탭 */}
           <div className="flex flex-col gap-4 mb-6 lg:flex-row">
             <div className="flex-1">
-              <SearchBar value={searchTerm} onChange={setSearchTerm} />
+              <SearchBar
+                value={searchTerm}
+                onChange={setSearchTerm}
+                onSearch={handleSearch}
+                isSearching={isSearching}
+              />
             </div>
             <FilterTabs
               activeFilter={activeFilter}
@@ -216,20 +225,27 @@ const PeopleList: React.FC = () => {
           </div>
 
           {/* 드롭다운 필터 */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4 flex-wrap">
               <DropCategory
                 value={sortOption}
                 onChange={handleSortChange}
                 disabled={isListLoading}
               />
               <SortDropdown isActive={isEditMode} />
+              {sortError && <p className="text-sm text-red-500">{sortError}</p>}
+              {searchError && (
+                <p className="text-sm text-red-500">{searchError}</p>
+              )}
             </div>
-            {sortError && <p className="text-sm text-red-500">{sortError}</p>}
+            <div className="flex justify-end">
+              <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                필터 적용
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* 인플루언서 그리드 */}
         <div className="grid grid-cols-1 gap-6 mb-12 md:grid-cols-2 lg:grid-cols-3">
           {isListLoading
             ? Array.from({ length: 6 }).map((_, index) => (

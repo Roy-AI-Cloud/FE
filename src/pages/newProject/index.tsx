@@ -5,6 +5,11 @@ import ProductImagesUpload from "./newProjectComponents/ProductImagesUpload.tsx"
 import EvaluationWeight from "./newProjectComponents/EvaluationWeight.tsx";
 import FormFields from "./newProjectComponents/FormFields.tsx";
 import { saveBrand, type BrandInfo } from "../../utils/brandStorage.ts";
+import {
+  createProject,
+  type CreateProjectPayload,
+} from "../../apis/newProject.ts";
+import { addProjectToStorage } from "../../utils/projectStorage";
 
 interface FormData {
   companyName: string;
@@ -101,14 +106,31 @@ const NewProject = () => {
         weight_roi: 30,
       };
 
+      // 로컬 브랜드 정보 저장 (기존 기능 유지)
       saveBrand(brandData);
 
-      console.log("✅ 브랜드 정보 저장 완료:", brandData);
+      // 프로젝트 생성 API 호출
+      const payload: CreateProjectPayload = {
+        company_name: formData.companyName,
+        brand_categories: formData.category.join(", "),
+        brand_tone: formData.brandTone.join(", "),
+        campaign_goal: formData.campaignGoal,
+        brand_image: formData.logo,
+      };
 
-      navigate("/youtube/home-list?mode=edit", { replace: true });
+      const projectResponse = await createProject(payload);
+      addProjectToStorage(projectResponse);
+
+      console.log("✅ 프로젝트 생성 완료:", projectResponse);
+
+      navigate("/project-list", { replace: true });
     } catch (error) {
       console.error("❌ 저장 실패:", error);
-      alert("브랜드 정보 저장에 실패했습니다.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "프로젝트 정보를 저장할 수 없습니다."
+      );
     }
   };
 
