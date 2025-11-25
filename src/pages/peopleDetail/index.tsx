@@ -9,6 +9,7 @@ import Description from "./PeopleDetailComponents/Description";
 import DetailHeader from "./PeopleDetailComponents/DetailHeader";
 import { useYoutuberProfile } from "../../hooks/useYoutuberProfile";
 import { useProjectList } from "../../hooks/useProjectList";
+import { useYoutuberVideos } from "../../hooks/useYoutuberVideos";
 
 const InfluencerDetailPage: React.FC = () => {
   const { channelId } = useParams<{ channelId: string }>();
@@ -19,8 +20,11 @@ const InfluencerDetailPage: React.FC = () => {
     error,
   } = useYoutuberProfile(channelId || "");
   const { data: projects = [] } = useProjectList();
+  const { data: videos = [], isLoading: isLoadingVideos } = useYoutuberVideos(
+    channelId || "",
+    10
+  );
 
-  // 가장 최근 프로젝트 ID 가져오기 (또는 URL에서 projectId 가져오기)
   const projectId =
     searchParams.get("projectId") || projects[0]?.project_id || "";
 
@@ -56,23 +60,14 @@ const InfluencerDetailPage: React.FC = () => {
 
   const tabs = ["콘텐츠", "성과 지표", "ROI 분석", "감성 분석"];
 
-  const recentContent = [
-    {
-      title: "친환경 제품 추천",
-      views: "28,500",
-      thumbnail: "/api/placeholder/200/120",
-    },
-    {
-      title: "비건 레시피",
-      views: "19,800",
-      thumbnail: "/api/placeholder/200/120",
-    },
-    {
-      title: "제로웨이스트 챌린지",
-      views: "25,200",
-      thumbnail: "/api/placeholder/200/120",
-    },
-  ];
+  // API에서 받은 영상 데이터를 ContentTab에 맞는 형식으로 변환
+  const recentContent = videos.map((video) => ({
+    title: video.video_title || video.title,
+    views: video.view_count.toLocaleString(),
+    thumbnail: video.video_id
+      ? `https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`
+      : "",
+  }));
 
   const categoryData = [
     { name: "건강 & 웰빙", percentage: 45 },
@@ -124,6 +119,7 @@ const InfluencerDetailPage: React.FC = () => {
           <ContentTab
             recentContent={recentContent}
             categoryData={categoryData}
+            isLoading={isLoadingVideos}
           />
         )}
 

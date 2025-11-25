@@ -7,46 +7,52 @@ interface DescriptionProps {
   isLoading: boolean;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const getStringProperty = (
+  obj: Record<string, unknown>,
+  ...keys: string[]
+): string => {
+  for (const key of keys) {
+    const value = obj[key];
+    if (typeof value === "string") {
+      return value;
+    }
+  }
+  return "";
+};
+
+// 안전하게 숫자 프로퍼티 추출하는 헬퍼 함수
+const getNumberProperty = (
+  obj: Record<string, unknown>,
+  ...keys: string[]
+): number => {
+  for (const key of keys) {
+    const value = obj[key];
+    if (typeof value === "number") {
+      return value;
+    }
+  }
+  return 0;
+};
+
+// 안전하게 프로퍼티 추출하는 헬퍼 함수 (string | number)
+const getProperty = (
+  obj: Record<string, unknown>,
+  ...keys: string[]
+): string | number | undefined => {
+  for (const key of keys) {
+    const value = obj[key];
+    if (typeof value === "string" || typeof value === "number") {
+      return value;
+    }
+  }
+  return undefined;
+};
+
 const Description: React.FC<DescriptionProps> = ({ profile, isLoading }) => {
-  // profile이 객체인지 확인하고 데이터 추출
-  const profileData =
-    typeof profile === "object" && profile !== null ? profile : null;
-
-  // API 응답에서 데이터 추출 (실제 API 응답 구조에 맞게 수정 필요)
-  const channelTitle =
-    (profileData as any)?.title ||
-    (profileData as any)?.channel_title ||
-    (profileData as any)?.name ||
-    "";
-  const category =
-    (profileData as any)?.category || (profileData as any)?.categories || "";
-  const description =
-    (profileData as any)?.description ||
-    (profileData as any)?.bio ||
-    (profileData as any)?.about ||
-    "";
-  const subscriberCount =
-    (profileData as any)?.subscriber_count ||
-    (profileData as any)?.subscribers_count ||
-    0;
-  const viewCount =
-    (profileData as any)?.view_count ||
-    (profileData as any)?.average_views ||
-    0;
-  const engagementRate =
-    (profileData as any)?.engagement_rate || 0;
-  const estimatedPrice =
-    (profileData as any)?.estimated_price ||
-    (profileData as any)?.price ||
-    "가격 문의";
-  const thumbnailUrl =
-    (profileData as any)?.thumbnail_url ||
-    (profileData as any)?.profile_image ||
-    "";
-
-  // 채널명의 첫 글자 추출 (프로필 이미지 대체용)
-  const firstChar = channelTitle ? channelTitle.charAt(0) : "?";
-
   if (isLoading) {
     return (
       <div className="p-8 mb-8 bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -58,6 +64,9 @@ const Description: React.FC<DescriptionProps> = ({ profile, isLoading }) => {
     );
   }
 
+  // profile이 객체인지 확인하고 데이터 추출
+  const profileData = isRecord(profile) ? profile : null;
+
   if (!profileData) {
     return (
       <div className="p-8 mb-8 bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -67,6 +76,46 @@ const Description: React.FC<DescriptionProps> = ({ profile, isLoading }) => {
       </div>
     );
   }
+
+  // API 응답에서 데이터 추출 (타입 안전하게)
+  const channelTitle = getStringProperty(
+    profileData,
+    "title",
+    "channel_title",
+    "name"
+  );
+  const category = getStringProperty(profileData, "category", "categories");
+  const description = getStringProperty(
+    profileData,
+    "description",
+    "bio",
+    "about"
+  );
+  const subscriberCount = getNumberProperty(
+    profileData,
+    "subscriber_count",
+    "subscribers_count"
+  );
+  const viewCount = getNumberProperty(
+    profileData,
+    "view_count",
+    "average_views"
+  );
+  const engagementRate = getNumberProperty(profileData, "engagement_rate");
+  const estimatedPriceValue = getProperty(
+    profileData,
+    "estimated_price",
+    "price"
+  );
+  const estimatedPrice: string | number =
+    estimatedPriceValue !== undefined ? estimatedPriceValue : "가격 문의";
+  const thumbnailUrl = getStringProperty(
+    profileData,
+    "thumbnail_url",
+    "profile_image"
+  );
+
+  const firstChar = channelTitle ? channelTitle.charAt(0) : "?";
 
   return (
     <>
@@ -103,9 +152,7 @@ const Description: React.FC<DescriptionProps> = ({ profile, isLoading }) => {
             </div>
 
             {/* 설명 */}
-            {description && (
-              <p className="mb-6 text-gray-700">{description}</p>
-            )}
+            {description && <p className="mb-6 text-gray-700">{description}</p>}
 
             {/* 주요 지표 */}
             <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
