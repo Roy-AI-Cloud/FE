@@ -33,11 +33,9 @@ export interface HomeYoutuber {
   engagement_rate: number;
   estimated_price: string;
 }
-
-// API 응답 인터페이스 (실제 API 응답 형식)
 interface ApiYoutuberResponse {
   channel_id: string;
-  title: string; // API는 'title'을 반환
+  title: string;
   subscriber_count: number;
   thumbnail_url: string;
   category: string;
@@ -50,9 +48,6 @@ export const getHomeYoutuberList = async (
 ): Promise<HomeYoutuber[]> => {
   const params = new URLSearchParams();
   params.append("limit", limit.toString());
-
-  // API URL 구성 - 프록시 사용 시 상대 경로로 통일
-  // vite.config.ts에서 /api 요청을 http://localhost:8000으로 프록시하도록 설정되어 있음
   const apiUrl = `/api/home/youtubers?${params.toString()}`;
 
   try {
@@ -98,7 +93,6 @@ export const getHomeYoutuberList = async (
   }
 };
 
-// 정렬된 유튜버 조회 API
 export type SortBy = "followers" | "engagement" | "price";
 
 export const getSortedYoutubers = async (
