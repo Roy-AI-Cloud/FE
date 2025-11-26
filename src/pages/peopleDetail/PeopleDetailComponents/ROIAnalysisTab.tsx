@@ -7,9 +7,11 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell
-} from 'recharts';
-import { estimate, type EstimateResponse } from '../../../apis/Estimate';
+  Cell,
+} from "recharts";
+import { estimate, type EstimateResponse } from "../../../apis/Estimate";
+import { useBrandMatch } from "../../../hooks/useBrandMatch";
+import { useTotalScore } from "../../../hooks/useTotalScore";
 
 interface ROIAnalysisTabProps {
   projectId: string;
@@ -20,9 +22,21 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
   projectId,
   channelId,
 }) => {
-  const [estimateData, setEstimateData] = useState<EstimateResponse | null>(null);
+  const [estimateData, setEstimateData] = useState<EstimateResponse | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const {
+    data: brandMatchData,
+    isLoading: isBrandMatchLoading,
+    error: brandMatchError,
+  } = useBrandMatch(projectId, channelId, !!projectId && !!channelId);
+  const {
+    data: totalScoreData,
+    isLoading: isTotalScoreLoading,
+    error: totalScoreError,
+  } = useTotalScore(projectId, channelId, !!projectId && !!channelId);
 
   // ROI 추정 API 호출
   useEffect(() => {
@@ -45,7 +59,9 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
         console.log("ROI 추정 데이터 로드 성공:", data);
       } catch (err) {
         console.error("ROI 추정 실패:", err);
-        setError(err instanceof Error ? err.message : "ROI 추정에 실패했습니다.");
+        setError(
+          err instanceof Error ? err.message : "ROI 추정에 실패했습니다."
+        );
       } finally {
         setIsLoading(false);
       }
@@ -54,22 +70,37 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
     fetchEstimateData();
   }, [projectId, channelId]);
 
+  const overallLoading =
+    isLoading || isBrandMatchLoading || isTotalScoreLoading;
+
   // 로딩 중일 때
-  if (isLoading) {
+  if (overallLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <p className="ml-4 text-gray-600">ROI 추정 중...</p>
+        <p className="ml-4 text-gray-600">분석 결과를 불러오는 중...</p>
       </div>
     );
   }
 
-  // 에러 발생하면
-  if (error) {
+  const combinedError =
+    error ||
+    (brandMatchError instanceof Error
+      ? brandMatchError.message
+      : brandMatchError
+      ? "브랜드 적합도 분석에 실패했습니다."
+      : null) ||
+    (totalScoreError instanceof Error
+      ? totalScoreError.message
+      : totalScoreError
+      ? "종합 점수를 불러오지 못했습니다."
+      : null);
+
+  if (combinedError) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-        <p className="text-red-600 font-medium">ROI 추정 실패</p>
-        <p className="text-red-500 mt-2">{error}</p>
+        <p className="text-red-600 font-medium">분석 실패</p>
+        <p className="text-red-500 mt-2">{combinedError}</p>
       </div>
     );
   }
@@ -85,22 +116,30 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
   // 차트 데이터 (API에서 가져온 estimate 데이터 사용)
   const data = [
     { name: "평가 점수", value: estimateData.score },
-    { name: "예상 조회수", value: Math.round(estimateData.estimated_views / 1000) }, // 천 단위로 변환
+    {
+      name: "예상 조회수",
+      value: Math.round(estimateData.estimated_views / 1000),
+    }, // 천 단위로 변환
     { name: "예상 참여율", value: estimateData.estimated_engagement },
   ];
 
   // 점수에 따른 등급 계산
-  const getGrade = (score: number): 'A' | 'B' | 'C' | 'D' => {
-    if (score >= 80) return 'A';
-    if (score >= 60) return 'B';
-    if (score >= 40) return 'C';
-    return 'D';
+  const getGrade = (score: number): "A" | "B" | "C" | "D" => {
+    if (score >= 80) return "A";
+    if (score >= 60) return "B";
+    if (score >= 40) return "C";
+    return "D";
   };
 
   const overallEvaluation = {
     grade: getGrade(estimateData.score),
     score: Math.round(estimateData.score),
-    message: estimateData.score >= 70 ? '우수한 ROI 예상' : estimateData.score >= 50 ? '양호한 ROI 예상' : 'ROI 개선 필요',
+    message:
+      estimateData.score >= 70
+        ? "우수한 ROI 예상"
+        : estimateData.score >= 50
+        ? "양호한 ROI 예상"
+        : "ROI 개선 필요",
   };
 
   // 단색 색상
@@ -115,22 +154,48 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
     cpm: estimateData.cpm,
   };
 
-  const gradeColorClasses: Record<'A' | 'B' | 'C' | 'D', string> = {
-    A: 'bg-green-100 text-green-700 border-green-200',
-    B: 'bg-blue-100 text-blue-700 border-blue-200',
-    C: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    D: 'bg-red-100 text-red-700 border-red-200',
+  const gradeColorClasses: Record<"A" | "B" | "C" | "D", string> = {
+    A: "bg-green-100 text-green-700 border-green-200",
+    B: "bg-blue-100 text-blue-700 border-blue-200",
+    C: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    D: "bg-red-100 text-red-700 border-red-200",
   };
 
-  const summaryAccentClasses: Record<'A' | 'B' | 'C' | 'D', { container: string; chip: string; }> = {
-    A: { container: 'from-green-50 border-green-200', chip: 'bg-green-100 text-green-700' },
-    B: { container: 'from-blue-50 border-blue-200', chip: 'bg-blue-100 text-blue-700' },
-    C: { container: 'from-yellow-50 border-yellow-200', chip: 'bg-yellow-100 text-yellow-700' },
-    D: { container: 'from-red-50 border-red-200', chip: 'bg-red-100 text-red-700' },
+  const summaryAccentClasses: Record<
+    "A" | "B" | "C" | "D",
+    { container: string; chip: string }
+  > = {
+    A: {
+      container: "from-green-50 border-green-200",
+      chip: "bg-green-100 text-green-700",
+    },
+    B: {
+      container: "from-blue-50 border-blue-200",
+      chip: "bg-blue-100 text-blue-700",
+    },
+    C: {
+      container: "from-yellow-50 border-yellow-200",
+      chip: "bg-yellow-100 text-yellow-700",
+    },
+    D: {
+      container: "from-red-50 border-red-200",
+      chip: "bg-red-100 text-red-700",
+    },
   };
 
   // 커스텀 Tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
+  interface TooltipPayload {
+    name: string;
+    value: number;
+  }
+
+  const CustomTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: TooltipPayload[];
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
@@ -151,43 +216,65 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
           <h3 className="text-2xl font-bold text-gray-900">ROI 종합 평가</h3>
         </div>
         <div className="flex items-center gap-4 mb-2">
-          <div className={`w-20 h-20 rounded-lg border flex items-center justify-center text-3xl font-bold ${gradeColorClasses[overallEvaluation.grade]}`}>
+          <div
+            className={`w-20 h-20 rounded-lg border flex items-center justify-center text-3xl font-bold ${
+              gradeColorClasses[overallEvaluation.grade]
+            }`}
+          >
             {overallEvaluation.grade}
           </div>
-          <span className="text-4xl font-extrabold text-gray-900 ml-2">{overallEvaluation.score}</span>
+          <span className="text-4xl font-extrabold text-gray-900 ml-2">
+            {overallEvaluation.score}
+          </span>
           <span className="text-gray-500">/ 100</span>
         </div>
-        <p className="text-sm text-gray-700 mb-10">{overallEvaluation.message}</p>
+        <p className="text-sm text-gray-700 mb-10">
+          {overallEvaluation.message}
+        </p>
 
         {/* ROI 요약 메트릭 */}
-        <div className={`rounded-lg border p-4 bg-gradient-to-r ${summaryAccentClasses[overallEvaluation.grade].container} to-transparent`}>
+        <div
+          className={`rounded-lg border p-4 bg-gradient-to-r ${
+            summaryAccentClasses[overallEvaluation.grade].container
+          } to-transparent`}
+        >
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <div className={`px-3 py-1 rounded-lg text-sm font-semibold ${summaryAccentClasses[overallEvaluation.grade].chip}`}>
+            <div
+              className={`px-3 py-1 rounded-lg text-sm font-semibold ${
+                summaryAccentClasses[overallEvaluation.grade].chip
+              }`}
+            >
               요약
             </div>
 
             <div className="flex items-center gap-2 text-gray-900">
               <span className="text-sm text-gray-600">예상 조회수</span>
-              <span className="font-semibold">{roiSummary.views.toLocaleString()}</span>
+              <span className="font-semibold">
+                {roiSummary.views.toLocaleString()}
+              </span>
             </div>
 
             <div className="flex items-center gap-2 text-gray-900">
               <span className="text-sm text-gray-600">예상 참여</span>
-              <span className="font-semibold">{roiSummary.engagements.toLocaleString()}</span>
+              <span className="font-semibold">
+                {roiSummary.engagements.toLocaleString()}
+              </span>
             </div>
 
             <div className="flex items-center gap-2 text-gray-900">
               <span className="text-sm text-gray-600">예상 비용</span>
               <span className="font-semibold text-blue-600">
-                {typeof roiSummary.cost === 'string' 
-                  ? roiSummary.cost 
+                {typeof roiSummary.cost === "string"
+                  ? roiSummary.cost
                   : `₩${Number(roiSummary.cost).toLocaleString()}`}
               </span>
             </div>
 
             <div className="flex items-center gap-2 text-gray-900">
               <span className="text-sm text-gray-600">참여율</span>
-              <span className="font-semibold">{`${roiSummary.engagementRate.toFixed(2)}%`}</span>
+              <span className="font-semibold">{`${roiSummary.engagementRate.toFixed(
+                2
+              )}%`}</span>
             </div>
 
             <div className="flex items-center gap-2 text-gray-900">
@@ -197,13 +284,81 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 종합 점수 */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              종합 점수 (가중치 적용)
+            </h3>
+            <p className="text-sm text-gray-500">
+              브랜드 이미지 / 감성 / ROI 가중치 기반 계산
+            </p>
+          </div>
+          {totalScoreData && (
+            <div className="text-right">
+              <p className="text-sm text-gray-600">종합 등급</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {totalScoreData.grade}
+              </p>
+            </div>
+          )}
+        </div>
+        {totalScoreData ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <p className="text-sm text-gray-600 mb-1">총 점수</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {totalScoreData.total_score.toFixed(2)}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <p className="text-sm text-gray-600 mb-1">추천 의견</p>
+                <p className="text-base text-gray-900">
+                  {totalScoreData.recommendation}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                {
+                  label: "브랜드 이미지 가중치",
+                  value: totalScoreData.weights_used.brand_image_weight,
+                },
+                {
+                  label: "감성 분석 가중치",
+                  value: totalScoreData.weights_used.sentiment_weight,
+                },
+                {
+                  label: "ROI 가중치",
+                  value: totalScoreData.weights_used.roi_weight,
+                },
+              ].map((weight) => (
+                <div
+                  key={weight.label}
+                  className="p-4 bg-gray-50 rounded-lg border border-gray-100"
+                >
+                  <p className="text-sm text-gray-600">{weight.label}</p>
+                  <p className="text-xl font-semibold text-gray-900">
+                    {(weight.value * 100).toFixed(0)}%
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-gray-500">
+            종합 점수 데이터를 불러올 수 없습니다.
+          </p>
+        )}
+      </div>
       {/* ROI 예측 카드들 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-700">
-              브랜드 적합도
-            </h3>
+            <h3 className="text-sm font-medium text-gray-700">브랜드 적합도</h3>
             <svg
               className="w-5 h-5 text-blue-500"
               fill="none"
@@ -238,9 +393,7 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
 
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-700">
-              예상 조회수
-            </h3>
+            <h3 className="text-sm font-medium text-gray-700">예상 조회수</h3>
             <svg
               className="w-5 h-5 text-green-500"
               fill="none"
@@ -268,16 +421,19 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
           <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
             <div
               className="bg-green-500 h-2 rounded-full"
-              style={{ width: `${Math.min((estimateData.estimated_views / 100000) * 100, 100)}%` }}
+              style={{
+                width: `${Math.min(
+                  (estimateData.estimated_views / 100000) * 100,
+                  100
+                )}%`,
+              }}
             />
           </div>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-700">
-              예상 참여율
-            </h3>
+            <h3 className="text-sm font-medium text-gray-700">예상 참여율</h3>
             <svg
               className="w-5 h-5 text-orange-500"
               fill="none"
@@ -299,7 +455,12 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
           <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
             <div
               className="bg-orange-500 h-2 rounded-full"
-              style={{ width: `${Math.min(estimateData.estimated_engagement * 10, 100)}%` }}
+              style={{
+                width: `${Math.min(
+                  estimateData.estimated_engagement * 10,
+                  100
+                )}%`,
+              }}
             />
           </div>
         </div>
@@ -307,12 +468,8 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
 
       {/* ROI 예측 대시보드 */}
       <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg border border-gray-200 p-8">
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          ROI 대시보드
-        </h3>
-        <p className="text-gray-600 mb-6">
-          캠페인 예상 결과 분석
-        </p>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">ROI 대시보드</h3>
+        <p className="text-gray-600 mb-6">캠페인 예상 결과 분석</p>
         <ResponsiveContainer width="100%" height={450}>
           <BarChart
             data={data}
@@ -326,14 +483,14 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
             />
             <XAxis
               dataKey="name"
-              tick={{ fill: '#6b7280', fontSize: 12 }}
-              tickLine={{ stroke: '#d1d5db' }}
-              axisLine={{ stroke: '#d1d5db' }}
+              tick={{ fill: "#6b7280", fontSize: 12 }}
+              tickLine={{ stroke: "#d1d5db" }}
+              axisLine={{ stroke: "#d1d5db" }}
             />
             <YAxis
-              tick={{ fill: '#6b7280', fontSize: 12 }}
-              tickLine={{ stroke: '#d1d5db' }}
-              axisLine={{ stroke: '#d1d5db' }}
+              tick={{ fill: "#6b7280", fontSize: 12 }}
+              tickLine={{ stroke: "#d1d5db" }}
+              axisLine={{ stroke: "#d1d5db" }}
               tickFormatter={(value) => `${value}%`}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -353,36 +510,105 @@ const ROIAnalysisTab: React.FC<ROIAnalysisTabProps> = ({
       </div>
 
       {/* 브랜드 적합도 분석 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">
-          브랜드 적합도 분석
-        </h3>
-        <div className="space-y-4">
-          {[
-            { name: "이미지 유사도", percentage: 50.0 },
-            { name: "텍스트 유사도", percentage: 46.5 },
-            { name: "톤 매칭", percentage: 0.0 },
-            { name: "카테고리 매칭", percentage: 50.0 },
-          ].map((item, index) => (
-            <div key={index} className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-700">{item.name}</span>
-                <span className="text-gray-600">{item.percentage}%</span>
+      {/* 브랜드 적합도 분석 */}
+      <div className="flex flex-col gap-4 bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900">
+              브랜드 적합도 분석
+            </h1>
+          </div>
+          {brandMatchData && (
+            <div className="text-right rounded-lg p-4 shadow-lg">
+              <p className="text-sm text-gray-600">적합도 점수</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {brandMatchData.score.toFixed(1)}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {brandMatchData ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <p className="text-sm text-gray-600 mb-1">브랜드 카테고리</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {brandMatchData.details.brand_category || "-"}
+                </p>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${item.percentage}%` }}
-                />
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <p className="text-sm text-gray-600 mb-1">분석 방식</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {brandMatchData.details.analysis_method}
+                </p>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
+            <div className="space-y-4">
+              {[
+                {
+                  name: "이미지 유사도",
+                  score: brandMatchData.details.image_similarity,
+                },
+                {
+                  name: "텍스트 호환성",
+                  score: brandMatchData.details.text_compatibility,
+                },
+              ].map((metric) => (
+                <div key={metric.name} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-700">{metric.name}</span>
+                    <span className="text-gray-600">
+                      {metric.score.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(Math.max(metric.score, 0), 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <p className="text-sm text-gray-600">분석한 썸네일 수</p>
+                <p className="text-xl font-semibold text-gray-900">
+                  {
+                    brandMatchData.details.channel_data_points
+                      .thumbnails_analyzed
+                  }
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <p className="text-sm text-gray-600">분석한 제목 수</p>
+                <p className="text-xl font-semibold text-gray-900">
+                  {brandMatchData.details.channel_data_points.titles_analyzed}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <p className="text-sm text-gray-600">브랜드 이미지 사용</p>
+                <p className="text-xl font-semibold text-gray-900">
+                  {brandMatchData.details.channel_data_points.has_brand_image
+                    ? "Yes"
+                    : "No"}
+                </p>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-gray-500">
+            브랜드 적합도 데이터가 없습니다.
+          </p>
+        )}
+      </div>
     </div>
   );
 };
 
 export default ROIAnalysisTab;
-

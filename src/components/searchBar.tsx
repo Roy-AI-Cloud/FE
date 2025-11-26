@@ -45,13 +45,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="w-full pl-10 pr-4 py-3 bg-gray-200 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-3 bg-gray-100 border border-gray-400 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
         />
       </div>
       <button
         onClick={onSearch}
         disabled={isSearching}
-        className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+        className="px-6 py-3 bg-white text-blue-600 border border-blue-600 rounded-xl hover:bg-blue-500 hover:text-white transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
       >
         {isSearching ? "검색 중..." : "검색"}
       </button>

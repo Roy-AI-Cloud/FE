@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import Item from "./projectListComponents/item";
 import HeaderLeftBack from "../../components/button/HeaderLeftBack";
 import type { CreateProjectResponse } from "../../apis/newProject";
 import { useProjectList } from "../../hooks/useProjectList";
 import { deleteProject } from "../../apis/newProject";
+import Header from "../../components/Header";
+
+const SELECTED_PROJECT_KEY = "selected-project-id";
 
 const ProjectList = () => {
   const queryClient = useQueryClient();
   const { data: projects = [], isLoading, error } = useProjectList();
   const [selectedProject, setSelectedProject] =
     useState<CreateProjectResponse | null>(null);
+  const [appliedProjectId, setAppliedProjectId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem(SELECTED_PROJECT_KEY);
+    setAppliedProjectId(stored);
+  }, []);
 
   const handleDelete = async (projectId: string) => {
     try {
@@ -26,10 +36,26 @@ const ProjectList = () => {
     }
   };
 
+  const handleApplyProject = (project: CreateProjectResponse) => {
+    setAppliedProjectId(project.project_id);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SELECTED_PROJECT_KEY, project.project_id);
+    }
+  };
+
+  const handleClearApplied = () => {
+    setAppliedProjectId(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(SELECTED_PROJECT_KEY);
+    }
+  };
+
   return (
     <>
-      <div className="flex flex-col min-h-screen items-center justify-center bg-gray-50">
-        <div className="bg-gray-150 shadow-md rounded-xl p-6 w-full max-w-2xl">
+    <Header/>
+      <div className="flex flex-col min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="bg-white shadow-md rounded-xl p-6 w-full max-w-2xl min-h-[70vh]">
+          {" "}
           <HeaderLeftBack />
           <div className="px-6 py-8 mx-auto max-w-7xl">
             <div className="mb-8 text-center">
@@ -64,6 +90,8 @@ const ProjectList = () => {
                       project={project}
                       onViewDetail={setSelectedProject}
                       onDelete={handleDelete}
+                      onApply={handleApplyProject}
+                      isApplied={appliedProjectId === project.project_id}
                     />
                   ))}
                 </div>
@@ -117,6 +145,22 @@ const ProjectList = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {appliedProjectId && (
+        <div className="fixed bottom-6 inset-x-0 flex justify-center pointer-events-none">
+          <div className="flex items-center gap-4 bg-white shadow-lg border border-purple-200 rounded-full px-6 py-3 pointer-events-auto">
+            <span className="text-sm text-gray-700">
+              적용 중인 프로젝트가 있습니다. ROI 분석 탭에서 확인할 수 있어요.
+            </span>
+            <button
+              onClick={handleClearApplied}
+              className="text-sm font-semibold text-purple-700 hover:text-purple-900"
+            >
+              적용 해제
+            </button>
           </div>
         </div>
       )}
