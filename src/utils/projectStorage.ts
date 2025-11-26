@@ -17,7 +17,7 @@ export const getStoredProjects = (): CreateProjectResponse[] => {
 export const addProjectToStorage = (project: CreateProjectResponse): void => {
   try {
     const current = getStoredProjects();
-    current.unshift(project); // 최신순으로 앞에 추가
+    current.unshift(project)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
   } catch (error) {
     console.error("프로젝트 저장 실패:", error);

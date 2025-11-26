@@ -36,9 +36,6 @@ export interface BrandCompatibilityResponse {
 export const analyzeBrandCompatibility = async (
   data: BrandCompatibilityRequest
 ): Promise<BrandCompatibilityResponse> => {
-  // 프록시 사용: vite.config.ts에서 /api 요청을 http://localhost:8000으로 프록시
-  // TODO: 백엔드에 실제 브랜드 호환성 분석 엔드포인트 확인 필요
-  // 현재는 /api/simulator/compare-weights를 사용하지만 404 오류 발생
   const apiUrl = `/api/simulator/compare-weights`;
 
   try {

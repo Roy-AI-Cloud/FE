@@ -202,7 +202,7 @@ const AdvancedFilterPage: React.FC = () => {
         {/* 하단 버튼 */}
         <div className="flex justify-between mt-8">
           <button
-            onClick={() => navigate("/List")}
+            onClick={() => navigate("/youtube/home-list")}
             className="px-6 py-3 text-gray-600 hover:text-gray-800"
           >
             취소

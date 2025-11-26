@@ -153,9 +153,6 @@ const PerformanceMetricsTab: React.FC<PerformanceMetricsTabProps> = ({
             <h3 className="text-lg sm:text-xl font-bold text-gray-900">
               성과 추정 결과
             </h3>
-            <span className="px-3 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-full">
-              AI 분석
-            </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {/* 평가 점수 */}

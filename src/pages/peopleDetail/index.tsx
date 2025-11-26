@@ -11,6 +11,8 @@ import { useYoutuberProfile } from "../../hooks/useYoutuberProfile";
 import { useProjectList } from "../../hooks/useProjectList";
 import { useYoutuberVideos } from "../../hooks/useYoutuberVideos";
 
+const SELECTED_PROJECT_KEY = "selected-project-id";
+
 const InfluencerDetailPage: React.FC = () => {
   const { channelId } = useParams<{ channelId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,8 +27,30 @@ const InfluencerDetailPage: React.FC = () => {
     10
   );
 
-  const projectId =
-    searchParams.get("projectId") || projects[0]?.project_id || "";
+  const [appliedProjectId, setAppliedProjectId] = useState<string>("");
+
+  useEffect(() => {
+    let nextId = searchParams.get("projectId") || "";
+    if (!nextId && typeof window !== "undefined") {
+      nextId = localStorage.getItem(SELECTED_PROJECT_KEY) || "";
+    }
+
+    if (
+      nextId &&
+      projects.length > 0 &&
+      !projects.some((project) => project.project_id === nextId)
+    ) {
+      nextId = "";
+    }
+
+    if (nextId && typeof window !== "undefined") {
+      localStorage.setItem(SELECTED_PROJECT_KEY, nextId);
+    }
+
+    setAppliedProjectId(nextId);
+  }, [searchParams, projects]);
+
+  const fallbackProjectId = appliedProjectId || projects[0]?.project_id || "";
 
   // URL에서 탭 정보 읽기
   const tabFromUrl = searchParams.get("tab") || "콘텐츠";
@@ -41,7 +65,12 @@ const InfluencerDetailPage: React.FC = () => {
       "ROI 분석": "roi-analysis",
       "감성 분석": "sentiment",
     };
-    setSearchParams({ tab: tabMap[tab] || "content" });
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("tab", tabMap[tab] || "content");
+    if (appliedProjectId) {
+      nextParams.set("projectId", appliedProjectId);
+    }
+    setSearchParams(nextParams);
   };
 
   // URL 변경 시 탭 업데이트
@@ -120,19 +149,38 @@ const InfluencerDetailPage: React.FC = () => {
             recentContent={recentContent}
             categoryData={categoryData}
             isLoading={isLoadingVideos}
+            channelId={channelId || ""}
           />
         )}
 
         {activeTab === "성과 지표" && (
           <PerformanceMetricsTab
-            projectId={projectId}
+            projectId={fallbackProjectId}
             channelId={channelId || ""}
           />
         )}
-        {activeTab === "ROI 분석" && (
-          <ROIAnalysisTab projectId={projectId} channelId={channelId || ""} />
+        {activeTab === "ROI 분석" &&
+          (appliedProjectId ? (
+            <ROIAnalysisTab
+              projectId={appliedProjectId}
+              channelId={channelId || ""}
+            />
+          ) : (
+            <div className="bg-white border border-dashed border-purple-300 rounded-lg p-8 text-center text-purple-700">
+              <p className="text-lg font-semibold mb-2">
+                프로젝트를 적용해주세요!
+              </p>
+              <p className="text-sm text-purple-500">
+                프로젝트를 적용하면 ROI 분석 결과를 확인할 수 있습니다.
+              </p>
+            </div>
+          ))}
+        {activeTab === "감성 분석" && (
+          <SentimentAnalysisTab
+            projectId={fallbackProjectId}
+            channelId={channelId || ""}
+          />
         )}
-        {activeTab === "감성 분석" && <SentimentAnalysisTab />}
       </main>
       <Footer />
     </div>

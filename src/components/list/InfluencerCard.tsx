@@ -10,6 +10,13 @@ interface InfluencerCardProps {
   image?: string;
   isLoading?: boolean;
   onClick?: () => void;
+  grade?: "A" | "B" | "C" | "D";
+  gradeScore?: number;
+  gradeLoading?: boolean;
+  gradeError?: string;
+  selectable?: boolean;
+  isSelected?: boolean;
+  onSelectToggle?: () => void;
 }
 
 const InfluencerCard: React.FC<InfluencerCardProps> = ({
@@ -22,6 +29,12 @@ const InfluencerCard: React.FC<InfluencerCardProps> = ({
   image,
   isLoading = false,
   onClick,
+  grade,
+  gradeLoading = false,
+  gradeError,
+  selectable = false,
+  isSelected = false,
+  onSelectToggle,
 }) => {
   if (isLoading) {
     return (
@@ -80,13 +93,41 @@ const InfluencerCard: React.FC<InfluencerCardProps> = ({
     }
   };
 
+  const gradeStyles: Record<
+    "A" | "B" | "C" | "D",
+    { container: string; text: string; border: string }
+  > = {
+    A: {
+      container: "bg-green-100",
+      text: "text-green-700",
+      border: "border-green-200",
+    },
+    B: {
+      container: "bg-blue-100",
+      text: "text-blue-700",
+      border: "border-blue-200",
+    },
+    C: {
+      container: "bg-yellow-100",
+      text: "text-yellow-700",
+      border: "border-yellow-200",
+    },
+    D: {
+      container: "bg-red-100",
+      text: "text-red-700",
+      border: "border-red-200",
+    },
+  };
+
   return (
     <div
-      className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+      className={`bg-white rounded-xl p-6 shadow-sm border ${
+        isSelected ? "border-purple-400 ring-2 ring-purple-200" : "border-gray-100"
+      } hover:shadow-md transition-shadow cursor-pointer`}
       onClick={onClick}
     >
       {/* 프로필 이미지 */}
-      <div className="w-full h-48 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg mb-4 flex items-center justify-center">
+      <div className="w-full h-48 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
         {image ? (
           <img
             src={image}
@@ -100,11 +141,47 @@ const InfluencerCard: React.FC<InfluencerCardProps> = ({
             </span>
           </div>
         )}
+        {selectable && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectToggle?.();
+            }}
+            className={`absolute top-3 left-3 w-7 h-7 rounded-full border flex items-center justify-center text-xs font-semibold ${
+              isSelected
+                ? "bg-purple-600 border-purple-600 text-white"
+                : "bg-white border-gray-300 text-gray-500"
+            }`}
+          >
+            {isSelected ? "✓" : ""}
+          </button>
+        )}
       </div>
 
       {/* 인플루언서 정보 */}
-      <h3 className="text-lg font-semibold text-gray-800 mb-1">{name}</h3>
-      <p className="text-sm text-gray-600 mb-4">{category}</p>
+      <div className="flex items-start justify-between mb-4 gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800">{name}</h3>
+          <p className="text-sm text-gray-600 mt-1">{category}</p>
+        </div>
+
+        <div className="flex-shrink-0 min-w-[88px] text-right">
+          {gradeLoading ? (
+            <div className="w-10 h-10 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
+          ) : grade ? (
+            <div
+              className={`inline-flex flex-col items-center justify-center px-4 py-2 rounded-xl text-base font-semibold border leading-tight ${gradeStyles[grade].container} ${gradeStyles[grade].text} ${gradeStyles[grade].border}`}
+            >
+              <span className="text-lg font-bold">{grade}</span>
+            </div>
+          ) : gradeError ? (
+            <div className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+              분석 실패
+            </div>
+          ) : null}
+        </div>
+      </div>
 
       {/* 플랫폼 아이콘 */}
       <div className="flex space-x-2 mb-4">
