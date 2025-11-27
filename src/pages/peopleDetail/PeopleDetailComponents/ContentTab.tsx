@@ -17,8 +17,9 @@ const ContentItem: React.FC<ContentItemProps> = ({
   const hasThumbnail = thumbnail && !imageError;
 
   return (
-    <div className="overflow-hidden border border-gray-200 rounded-lg">
-      <div className="relative flex items-center justify-center w-full h-32 bg-gradient-to-br from-green-100 to-blue-100">
+    <div className="overflow-hidden border border-gray-200 rounded-lg hover:shadow-lg transition-shadow">
+      {/* 썸네일 영역 - 높이 증가 */}
+      <div className="relative flex items-center justify-center w-full h-48 bg-gradient-to-br from-green-100 to-blue-100">
         {hasThumbnail ? (
           <img
             src={thumbnail}
@@ -30,9 +31,12 @@ const ContentItem: React.FC<ContentItemProps> = ({
           <span className="text-gray-500">썸네일</span>
         )}
       </div>
-      <div className="p-4">
-        <h4 className="mb-2 font-medium text-gray-900">{title}</h4>
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
+      {/* 텍스트 영역 - 패딩 감소 */}
+      <div className="p-3">
+        <h4 className="mb-2 font-medium text-gray-900 line-clamp-2 text-sm">
+          {title}
+        </h4>
+        <div className="flex items-center space-x-2 text-xs text-gray-600">
           <svg
             className="w-4 h-4"
             fill="none"

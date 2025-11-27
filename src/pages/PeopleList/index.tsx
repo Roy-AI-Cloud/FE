@@ -211,7 +211,6 @@ const PeopleList: React.FC = () => {
 
       console.log("API 검색 결과 (원본):", searchResults);
 
-      // SearchResult를 HomeYoutuber 형식으로 변환
       const convertedResults: HomeYoutuber[] = searchResults.map((item) => ({
         channel_id: item.channel_id,
         channel_title: item.title,
