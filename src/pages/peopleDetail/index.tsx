@@ -10,6 +10,7 @@ import DetailHeader from "./PeopleDetailComponents/DetailHeader";
 import { useYoutuberProfile } from "../../hooks/useYoutuberProfile";
 import { useProjectList } from "../../hooks/useProjectList";
 import { useYoutuberVideos } from "../../hooks/useYoutuberVideos";
+import { Link } from "react-router-dom";
 
 const SELECTED_PROJECT_KEY = "selected-project-id";
 
@@ -173,6 +174,7 @@ const InfluencerDetailPage: React.FC = () => {
               <p className="text-sm text-purple-500">
                 프로젝트를 적용하면 ROI 분석 결과를 확인할 수 있습니다.
               </p>
+              <Link to="/project-list" className="text-sm text-purple-500 border border-purple-500 p-1 rounded-md hover:text-white hover:bg-purple-500`">바로가기</Link>
             </div>
           ))}
         {activeTab === "감성 분석" && (

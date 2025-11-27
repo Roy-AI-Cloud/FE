@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import SearchBar from "../../components/searchBar";
 import FilterTabs from "../../components/list/FilterTabs";
 import InfluencerCard from "../../components/list/InfluencerCard";
@@ -22,6 +23,7 @@ const ITEMS_PER_PAGE = 50;
 
 const PeopleList: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("전체");
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,11 +41,18 @@ const PeopleList: React.FC = () => {
     isLoading: isProjectLoading,
     error: projectError,
   } = useProjectList();
-  const { data, isLoading, error } = useHomeYoutubers(50);
+  // 서버 사이드 페이지네이션을 위한 offset 계산 (기본 모드에서만 사용)
+  const isServerSideMode = !isSearchMode && sortOption === "기본순";
+  const offset = isServerSideMode ? (currentPage - 1) * ITEMS_PER_PAGE : 0;
+  const { data, isLoading, error } = useHomeYoutubers(
+    isServerSideMode ? ITEMS_PER_PAGE : undefined,
+    isServerSideMode ? offset : undefined
+  );
   const [baseInfluencers, setBaseInfluencers] = useState<HomeYoutuber[]>([]);
   const [displayInfluencers, setDisplayInfluencers] = useState<HomeYoutuber[]>(
     []
   );
+  const [hasMorePages, setHasMorePages] = useState(true);
 
   useEffect(() => {
     if (!projects.length) return;
@@ -52,18 +61,57 @@ const PeopleList: React.FC = () => {
     if (!storedId) return;
     const matched = projects.find((project) => project.project_id === storedId);
     if (matched) {
-      setSelectedProject((prev) =>
-        prev?.project_id === matched.project_id ? prev : matched
-      );
+      setSelectedProject((prev) => {
+        // 프로젝트가 변경되었을 때만 ROI 쿼리 캐시 무효화
+        if (prev?.project_id !== matched.project_id) {
+          // 이전 프로젝트의 모든 ROI 쿼리 캐시 제거
+          if (prev?.project_id) {
+            queryClient.removeQueries({
+              predicate: (query) => {
+                const key = query.queryKey;
+                return (
+                  Array.isArray(key) &&
+                  key[0] === "roi-estimate" &&
+                  key[1] === prev.project_id
+                );
+              },
+            });
+          }
+          // 새 프로젝트의 모든 ROI 쿼리 캐시 무효화 (새로 가져오기)
+          queryClient.invalidateQueries({
+            predicate: (query) => {
+              const key = query.queryKey;
+              return (
+                Array.isArray(key) &&
+                key[0] === "roi-estimate" &&
+                key[1] === matched.project_id
+              );
+            },
+          });
+          return matched;
+        }
+        return prev;
+      });
     }
-  }, [projects]);
+  }, [projects, queryClient]);
 
   useEffect(() => {
     if (Array.isArray(data)) {
-      setBaseInfluencers(data);
-      setDisplayInfluencers(data);
+      // 서버 사이드 페이지네이션 모드일 때만 처리
+      if (isServerSideMode) {
+        // 첫 페이지일 때만 baseInfluencers 설정
+        if (currentPage === 1) {
+          setBaseInfluencers(data);
+        }
+        setDisplayInfluencers(data);
+        // 반환된 데이터가 limit보다 적으면 마지막 페이지
+        setHasMorePages(data.length === ITEMS_PER_PAGE);
+      } else {
+        // 검색/정렬 모드에서는 data를 사용하지 않음 (별도 API 호출)
+        // 이 경우는 displayInfluencers가 이미 설정되어 있음
+      }
     }
-  }, [data]);
+  }, [data, currentPage, isServerSideMode]);
 
   // 필터링된 인플루언서 목록
   const filteredInfluencers = useMemo(() => {
@@ -76,7 +124,24 @@ const PeopleList: React.FC = () => {
       return displayInfluencers; // 검색 결과 그대로 반환
     }
 
-    // 기본 모드: 클라이언트 사이드 필터링
+    // 정렬 모드일 때는 클라이언트 사이드 필터링만 적용
+    if (sortOption !== "기본순") {
+      return displayInfluencers.filter((influencer: HomeYoutuber) => {
+        const matchesSearch =
+          influencer.channel_title
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          influencer.category.toLowerCase().includes(searchTerm.toLowerCase());
+
+        if (activeFilter === "전체") return matchesSearch;
+        if (activeFilter === "YouTube") return matchesSearch;
+        if (activeFilter === "Instagram") return false;
+
+        return matchesSearch;
+      });
+    }
+
+    // 기본 모드 (서버 사이드 페이지네이션): 클라이언트 사이드 필터링만 (검색어/필터)
     return displayInfluencers.filter((influencer: HomeYoutuber) => {
       const matchesSearch =
         influencer.channel_title
@@ -90,15 +155,27 @@ const PeopleList: React.FC = () => {
 
       return matchesSearch;
     });
-  }, [displayInfluencers, searchTerm, activeFilter, isSearchMode]);
+  }, [displayInfluencers, searchTerm, activeFilter, isSearchMode, sortOption]);
 
-  const totalPages = Math.ceil(filteredInfluencers.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedInfluencers = filteredInfluencers.slice(startIndex, endIndex);
+  // 페이지네이션 계산
+  let totalPages: number;
+  let paginatedInfluencers: HomeYoutuber[];
+  
+  if (isServerSideMode) {
+    // 서버 사이드 페이지네이션: 다음 페이지가 있으면 현재 페이지 + 1, 없으면 현재 페이지
+    totalPages = hasMorePages ? currentPage + 1 : currentPage;
+    paginatedInfluencers = filteredInfluencers;
+  } else {
+    // 클라이언트 사이드 페이지네이션 (검색/정렬 모드)
+    totalPages = Math.ceil(filteredInfluencers.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    paginatedInfluencers = filteredInfluencers.slice(startIndex, endIndex);
+  }
 
   useEffect(() => {
     setCurrentPage(1);
+    setHasMorePages(true);
   }, [searchTerm, activeFilter]);
 
   const handlePageChange = (page: number) => {
@@ -210,18 +287,63 @@ const PeopleList: React.FC = () => {
   const isListLoading = isLoading || isSortLoading || isSearching;
 
   const handleProjectSelect = (project: CreateProjectResponse) => {
+    const previousProjectId = selectedProject?.project_id;
     setSelectedProject(project);
     if (typeof window !== "undefined") {
       localStorage.setItem(SELECTED_PROJECT_KEY, project.project_id);
     }
+    
+    // 프로젝트 변경 시 모든 ROI 쿼리 캐시 무효화
+    // 이전 프로젝트의 모든 ROI 쿼리 캐시 제거
+    if (previousProjectId && previousProjectId !== project.project_id) {
+      queryClient.removeQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === "roi-estimate" &&
+            key[1] === previousProjectId
+          );
+        },
+      });
+    }
+    
+    // 새 프로젝트의 모든 ROI 쿼리 캐시 무효화 (새로 가져오기)
+    queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey;
+        return (
+          Array.isArray(key) &&
+          key[0] === "roi-estimate" &&
+          key[1] === project.project_id
+        );
+      },
+    });
+    
     setIsProjectModalOpen(false);
   };
 
   const handleProjectReset = () => {
+    const previousProjectId = selectedProject?.project_id;
     setSelectedProject(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem(SELECTED_PROJECT_KEY);
     }
+    
+    // 프로젝트 해제 시 해당 프로젝트의 모든 ROI 쿼리 캐시 제거
+    if (previousProjectId) {
+      queryClient.removeQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === "roi-estimate" &&
+            key[1] === previousProjectId
+          );
+        },
+      });
+    }
+    
     setIsProjectModalOpen(false);
   };
 
@@ -235,7 +357,7 @@ const PeopleList: React.FC = () => {
           <h1 className="mb-2 text-3xl font-bold text-gray-900">
             인플루언서 대시보드
           </h1>
-          <p className="text-gray-600">프로젝트 설정에 따라 정량적 데이터 기반으로 최적의 인플루언서를 추천받아 보세요.</p>
+          <p className="text-gray-600">설정에 따라 정량적 데이터 기반으로 최적의 인플루언서를 추천받아 보세요.</p>
         </div>
 
         {/* 검색 및 필터 */}
@@ -464,8 +586,8 @@ const ProjectSelectModal: React.FC<ProjectSelectModalProps> = ({
                     onClick={() => handleProjectSelect(project)}
                     className={`p-4 border rounded-lg cursor-pointer transition-all ${
                       isSelected
-                        ? "border-purple-500 bg-purple-50"
-                        : "border-gray-200 hover:border-blue-500 hover:bg-blue-50"
+                        ? "border-purple-600 bg-purple-50"
+                        : "border-gray-200 hover:border-purple-500 hover:bg-purple-50"
                     }`}
                   >
                     <div className="flex items-start justify-between">
