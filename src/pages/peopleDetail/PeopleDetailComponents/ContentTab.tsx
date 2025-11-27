@@ -17,13 +17,13 @@ const ContentItem: React.FC<ContentItemProps> = ({
   const hasThumbnail = thumbnail && !imageError;
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
-      <div className="relative w-full h-32 bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center">
+    <div className="overflow-hidden border border-gray-200 rounded-lg">
+      <div className="relative flex items-center justify-center w-full h-32 bg-gradient-to-br from-green-100 to-blue-100">
         {hasThumbnail ? (
           <img
             src={thumbnail}
             alt={title}
-            className="w-full h-full object-cover"
+            className="object-cover w-full h-full"
             onError={() => setImageError(true)}
           />
         ) : (
@@ -31,7 +31,7 @@ const ContentItem: React.FC<ContentItemProps> = ({
         )}
       </div>
       <div className="p-4">
-        <h4 className="font-medium text-gray-900 mb-2">{title}</h4>
+        <h4 className="mb-2 font-medium text-gray-900">{title}</h4>
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <svg
             className="w-4 h-4"
@@ -164,21 +164,21 @@ const ContentTab: React.FC<ContentTabProps> = ({
   return (
     <div className="space-y-8">
       {/* 최근 콘텐츠 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <h3 className="mb-4 text-lg font-semibold text-gray-900">
           최근 콘텐츠
         </h3>
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <div className="w-8 h-8 border-b-2 border-blue-500 rounded-full animate-spin"></div>
             <p className="ml-4 text-gray-600">콘텐츠를 불러오는 중...</p>
           </div>
         ) : recentContent.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="py-12 text-center">
             <p className="text-gray-500">콘텐츠가 없습니다.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {recentContent.map((content, index) => (
               <ContentItem
                 key={index}
@@ -192,20 +192,20 @@ const ContentTab: React.FC<ContentTabProps> = ({
       </div>
 
       {/* 기본 통계 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <h3 className="mb-4 text-lg font-semibold text-gray-900">
           채널 기본 통계
         </h3>
         {statsError && (
-          <p className="text-sm text-red-500 mb-4">
+          <p className="mb-4 text-sm text-red-500">
             통계 정보를 불러오지 못했습니다.
           </p>
         )}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {metricCards.map((metric) => (
             <div
               key={metric.label}
-              className="p-4 bg-gray-50 rounded-lg border border-gray-100"
+              className="p-4 border border-gray-100 rounded-lg bg-gray-50"
             >
               <p className="text-xs text-gray-500">{metric.label}</p>
               <p className="mt-2 text-xl font-semibold text-gray-900">
@@ -217,20 +217,20 @@ const ContentTab: React.FC<ContentTabProps> = ({
       </div>
 
       {/* ROI 메트릭 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">ROI 메트릭</h3>
           {statsData?.estimated_price && (
-            <span className="text-sm text-purple-600 font-medium">
+            <span className="text-sm font-medium text-purple-600">
               예상 단가: {statsData.estimated_price}
             </span>
           )}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
           {roiCards.map((metric) => (
             <div
               key={metric.label}
-              className="p-4 bg-gray-50 rounded-lg border border-gray-100"
+              className="p-4 border border-gray-100 rounded-lg bg-gray-50"
             >
               <p className="text-xs text-gray-500">{metric.label}</p>
               <p className="mt-2 text-lg font-semibold text-gray-900">
@@ -242,62 +242,62 @@ const ContentTab: React.FC<ContentTabProps> = ({
       </div>
 
       {/* 콘텐츠 카테고리 분포 */}
-      <div className="bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg shadow-lg p-6">
-  <h3 className="text-lg font-semibold text-gray-700 mb-4">
-    대표 카테고리
-  </h3>
-  <div>
-    {isStatsLoading ? (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-        <p className="ml-3 text-gray-600 text-sm">
-          통계를 불러오는 중...
-        </p>
+      <div className="p-6 rounded-lg shadow-lg bg-gradient-to-r from-blue-100 to-purple-100">
+        <h3 className="mb-4 text-lg font-semibold text-gray-700">
+          대표 카테고리
+        </h3>
+        <div>
+          {isStatsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+              <p className="ml-3 text-sm text-gray-600">
+                통계를 불러오는 중...
+              </p>
+            </div>
+          ) : statsError ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-red-500">
+                통계 정보를 불러오지 못했습니다.
+              </p>
+              <p className="mt-1 text-xs text-gray-400">
+                {statsError instanceof Error
+                  ? statsError.message
+                  : "알 수 없는 오류"}
+              </p>
+            </div>
+          ) : categoryItems.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-gray-500">
+                표시할 카테고리 데이터가 없습니다.
+              </p>
+            </div>
+          ) : (
+            <p className="text-lg text-gray-700 justify-cetner">
+              이 채널의 대표 카테고리는{" "}
+              <span
+                className={`font-semibold text-xl ${
+                  categoryItems[0].name === "건강/의료"
+                    ? "text-green-500"
+                    : categoryItems[0].name === "테크/IT"
+                    ? "text-blue-500"
+                    : categoryItems[0].name === "라이프스타일"
+                    ? "text-purple-500"
+                    : categoryItems[0].name === "패션"
+                    ? "text-pink-500"
+                    : categoryItems[0].name === "뷰티"
+                    ? "text-rose-500"
+                    : categoryItems[0].name === "요리"
+                    ? "text-orange-500"
+                    : "text-gray-800"
+                }`}
+              >
+                {categoryItems[0].name}
+              </span>
+              입니다
+            </p>
+          )}
+        </div>
       </div>
-    ) : statsError ? (
-      <div className="text-center py-8">
-        <p className="text-sm text-red-500">
-          통계 정보를 불러오지 못했습니다.
-        </p>
-        <p className="text-xs text-gray-400 mt-1">
-          {statsError instanceof Error
-            ? statsError.message
-            : "알 수 없는 오류"}
-        </p>
-      </div>
-    ) : categoryItems.length === 0 ? (
-      <div className="text-center py-8">
-        <p className="text-gray-500 text-sm">
-          표시할 카테고리 데이터가 없습니다.
-        </p>
-      </div>
-    ) : (
-      <p className="text-lg text-gray-700 justify-cetner">
-        이 채널의 대표 카테고리는{' '}
-        <span
-          className={`font-semibold text-xl ${
-            categoryItems[0].name === '건강/의료'
-              ? 'text-green-500'
-              : categoryItems[0].name === '테크/IT'
-              ? 'text-blue-500'
-              : categoryItems[0].name === '라이프스타일'
-              ? 'text-purple-500'
-              : categoryItems[0].name === '패션'
-              ? 'text-pink-500'
-              : categoryItems[0].name === '뷰티'
-              ? 'text-rose-500'
-              : categoryItems[0].name === '요리'
-              ? 'text-orange-500'
-              : 'text-gray-800'
-          }`}
-        >
-           {categoryItems[0].name} 
-        </span>
-        입니다
-      </p>
-    )}
-  </div>
-</div>
     </div>
   );
 };

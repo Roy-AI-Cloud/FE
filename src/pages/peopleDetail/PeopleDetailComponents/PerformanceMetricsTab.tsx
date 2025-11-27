@@ -181,7 +181,7 @@ const PerformanceMetricsTab: React.FC<PerformanceMetricsTabProps> = ({
             </div>
 
             {/* 예상 조회수 */}
-            <div className="p-3 sm:p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            {/* <div className="p-3 sm:p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">
                   예상 조회수
@@ -209,7 +209,7 @@ const PerformanceMetricsTab: React.FC<PerformanceMetricsTabProps> = ({
               <p className="text-xl sm:text-2xl font-bold text-blue-600">
                 {estimateData.estimated_views.toLocaleString()}
               </p>
-            </div>
+            </div> */}
 
             {/* 예상 참여율 */}
             <div className="p-3 sm:p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">

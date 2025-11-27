@@ -16,7 +16,7 @@ interface TotalScoreSectionProps {
 
 const TotalScoreSection = ({ totalScoreData }: TotalScoreSectionProps) => {
   if (!totalScoreData)
-    return <div className="text-sm text-gray-500">종합 점수 데이터를 불러올 수 없습니다.</div>;
+    return <div className="text-sm text-gray-500"> 데이터를 불러올 수 없습니다.</div>;
 
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
