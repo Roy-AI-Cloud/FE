@@ -1,5 +1,7 @@
 import React from "react";
 
+type GradeLetter = "S" | "A" | "B" | "C" | "D";
+
 interface InfluencerCardProps {
   name: string;
   category: string;
@@ -10,7 +12,7 @@ interface InfluencerCardProps {
   image?: string;
   isLoading?: boolean;
   onClick?: () => void;
-  grade?: "A" | "B" | "C" | "D";
+  grade?: GradeLetter;
   gradeScore?: number;
   gradeLoading?: boolean;
   gradeError?: string;
@@ -94,9 +96,14 @@ const InfluencerCard: React.FC<InfluencerCardProps> = ({
   };
 
   const gradeStyles: Record<
-    "A" | "B" | "C" | "D",
+    GradeLetter,
     { container: string; text: string; border: string }
   > = {
+    S: {
+      container: "bg-purple-100",
+      text: "text-purple-700",
+      border: "border-purple-200",
+    },
     A: {
       container: "bg-green-100",
       text: "text-green-700",
@@ -118,11 +125,21 @@ const InfluencerCard: React.FC<InfluencerCardProps> = ({
       border: "border-red-200",
     },
   };
+  const defaultGradeStyle = {
+    container: "bg-gray-100",
+    text: "text-gray-700",
+    border: "border-gray-200",
+  };
+  const appliedGradeStyle = grade
+    ? gradeStyles[grade] ?? defaultGradeStyle
+    : defaultGradeStyle;
 
   return (
     <div
       className={`bg-white rounded-xl p-6 shadow-sm border ${
-        isSelected ? "border-purple-400 ring-2 ring-purple-200" : "border-gray-100"
+        isSelected
+          ? "border-purple-400 ring-2 ring-purple-200"
+          : "border-gray-100"
       } hover:shadow-md transition-shadow cursor-pointer`}
       onClick={onClick}
     >
@@ -161,7 +178,7 @@ const InfluencerCard: React.FC<InfluencerCardProps> = ({
 
       {/* 인플루언서 정보 */}
       <div className="flex items-start justify-between mb-4 gap-4">
-        <div>
+        <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-800">{name}</h3>
           <p className="text-sm text-gray-600 mt-1">{category}</p>
         </div>
@@ -171,7 +188,7 @@ const InfluencerCard: React.FC<InfluencerCardProps> = ({
             <div className="w-10 h-10 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
           ) : grade ? (
             <div
-              className={`inline-flex flex-col items-center justify-center px-4 py-2 rounded-xl text-base font-semibold border leading-tight ${gradeStyles[grade].container} ${gradeStyles[grade].text} ${gradeStyles[grade].border}`}
+              className={`inline-flex flex-col items-center justify-center px-4 py-2 rounded-xl text-base font-semibold border leading-tight ${appliedGradeStyle.container} ${appliedGradeStyle.text} ${appliedGradeStyle.border}`}
             >
               <span className="text-lg font-bold">{grade}</span>
             </div>

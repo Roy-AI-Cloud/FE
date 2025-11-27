@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import SearchBar from "../../components/searchBar";
 import FilterTabs from "../../components/list/FilterTabs";
 import InfluencerCard from "../../components/list/InfluencerCard";
@@ -15,7 +14,8 @@ import { search } from "../../apis/search";
 import Header from "../../components/Header";
 import { useProjectList } from "../../hooks/useProjectList";
 import type { CreateProjectResponse } from "../../apis/newProject";
-import { useRoiEstimate } from "../../hooks/useRoiEstimate";
+import { useProjectYoutubers } from "../../hooks/useProjectYoutubers";
+import type { ProjectGrade } from "../../apis/getProjectYoutubers";
 
 const SELECTED_PROJECT_KEY = "selected-project-id";
 
@@ -23,7 +23,6 @@ const ITEMS_PER_PAGE = 50;
 
 const PeopleList: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("전체");
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,39 +60,43 @@ const PeopleList: React.FC = () => {
     if (!storedId) return;
     const matched = projects.find((project) => project.project_id === storedId);
     if (matched) {
-      setSelectedProject((prev) => {
-        // 프로젝트가 변경되었을 때만 ROI 쿼리 캐시 무효화
-        if (prev?.project_id !== matched.project_id) {
-          // 이전 프로젝트의 모든 ROI 쿼리 캐시 제거
-          if (prev?.project_id) {
-            queryClient.removeQueries({
-              predicate: (query) => {
-                const key = query.queryKey;
-                return (
-                  Array.isArray(key) &&
-                  key[0] === "roi-estimate" &&
-                  key[1] === prev.project_id
-                );
-              },
-            });
-          }
-          // 새 프로젝트의 모든 ROI 쿼리 캐시 무효화 (새로 가져오기)
-          queryClient.invalidateQueries({
-            predicate: (query) => {
-              const key = query.queryKey;
-              return (
-                Array.isArray(key) &&
-                key[0] === "roi-estimate" &&
-                key[1] === matched.project_id
-              );
-            },
-          });
-          return matched;
-        }
-        return prev;
+      setSelectedProject((prev) =>
+        prev?.project_id === matched.project_id ? prev : matched
+      );
+    }
+  }, [projects]);
+
+  const selectedProjectId = selectedProject?.project_id;
+
+  const {
+    data: projectYoutubers = [],
+    isLoading: isProjectYoutubersLoading,
+    error: projectYoutubersError,
+  } = useProjectYoutubers(selectedProjectId, !!selectedProjectId);
+
+  const projectGradeMap = useMemo(() => {
+    const map = new Map<
+      string,
+      { grade?: ProjectGrade; total_score?: number }
+    >();
+    if (Array.isArray(projectYoutubers)) {
+      projectYoutubers.forEach((item) => {
+        map.set(item.channel_id, {
+          grade: item.grade,
+          total_score: item.total_score,
+        });
       });
     }
-  }, [projects, queryClient]);
+    return map;
+  }, [projectYoutubers]);
+
+  const gradeLoading = !!selectedProjectId && isProjectYoutubersLoading;
+  const gradeErrorMessage =
+    selectedProjectId && projectYoutubersError
+      ? projectYoutubersError instanceof Error
+        ? projectYoutubersError.message
+        : "프로젝트 등급을 불러오지 못했습니다."
+      : undefined;
 
   useEffect(() => {
     if (Array.isArray(data)) {
@@ -160,13 +163,11 @@ const PeopleList: React.FC = () => {
   // 페이지네이션 계산
   let totalPages: number;
   let paginatedInfluencers: HomeYoutuber[];
-  
+
   if (isServerSideMode) {
-    // 서버 사이드 페이지네이션: 다음 페이지가 있으면 현재 페이지 + 1, 없으면 현재 페이지
     totalPages = hasMorePages ? currentPage + 1 : currentPage;
     paginatedInfluencers = filteredInfluencers;
   } else {
-    // 클라이언트 사이드 페이지네이션 (검색/정렬 모드)
     totalPages = Math.ceil(filteredInfluencers.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -197,7 +198,7 @@ const PeopleList: React.FC = () => {
     setIsSearching(true);
     setSearchError(null);
     setCurrentPage(1);
-    setIsSearchMode(true); // 검색 모드 활성화
+    setIsSearchMode(true);
 
     try {
       console.log("검색 시작:", trimmedKeyword);
@@ -287,63 +288,20 @@ const PeopleList: React.FC = () => {
   const isListLoading = isLoading || isSortLoading || isSearching;
 
   const handleProjectSelect = (project: CreateProjectResponse) => {
-    const previousProjectId = selectedProject?.project_id;
     setSelectedProject(project);
     if (typeof window !== "undefined") {
       localStorage.setItem(SELECTED_PROJECT_KEY, project.project_id);
     }
-    
-    // 프로젝트 변경 시 모든 ROI 쿼리 캐시 무효화
-    // 이전 프로젝트의 모든 ROI 쿼리 캐시 제거
-    if (previousProjectId && previousProjectId !== project.project_id) {
-      queryClient.removeQueries({
-        predicate: (query) => {
-          const key = query.queryKey;
-          return (
-            Array.isArray(key) &&
-            key[0] === "roi-estimate" &&
-            key[1] === previousProjectId
-          );
-        },
-      });
-    }
-    
-    // 새 프로젝트의 모든 ROI 쿼리 캐시 무효화 (새로 가져오기)
-    queryClient.invalidateQueries({
-      predicate: (query) => {
-        const key = query.queryKey;
-        return (
-          Array.isArray(key) &&
-          key[0] === "roi-estimate" &&
-          key[1] === project.project_id
-        );
-      },
-    });
-    
+
     setIsProjectModalOpen(false);
   };
 
   const handleProjectReset = () => {
-    const previousProjectId = selectedProject?.project_id;
     setSelectedProject(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem(SELECTED_PROJECT_KEY);
     }
-    
-    // 프로젝트 해제 시 해당 프로젝트의 모든 ROI 쿼리 캐시 제거
-    if (previousProjectId) {
-      queryClient.removeQueries({
-        predicate: (query) => {
-          const key = query.queryKey;
-          return (
-            Array.isArray(key) &&
-            key[0] === "roi-estimate" &&
-            key[1] === previousProjectId
-          );
-        },
-      });
-    }
-    
+
     setIsProjectModalOpen(false);
   };
 
@@ -357,7 +315,10 @@ const PeopleList: React.FC = () => {
           <h1 className="mb-2 text-3xl font-bold text-gray-900">
             인플루언서 대시보드
           </h1>
-          <p className="text-gray-600">설정에 따라 정량적 데이터 기반으로 최적의 인플루언서를 추천받아 보세요.</p>
+          <p className="text-gray-600">
+            설정에 따라 정량적 데이터 기반으로 최적의 인플루언서를 추천받아
+            보세요.
+          </p>
         </div>
 
         {/* 검색 및 필터 */}
@@ -428,23 +389,31 @@ const PeopleList: React.FC = () => {
             ? Array.from({ length: 6 }).map((_, index) => (
                 <SkeletonCard key={index} />
               ))
-            : paginatedInfluencers.map((influencer) => (
-                <InfluencerCardWithGrade
-                  key={influencer.channel_id}
-                  influencer={influencer}
-                  selectedProject={selectedProject}
-                  onClick={() => {
-                    const basePath = `/influencer/${influencer.channel_id}`;
-                    if (selectedProject?.project_id) {
-                      const search = new URLSearchParams();
-                      search.set("projectId", selectedProject.project_id);
-                      navigate(`${basePath}?${search.toString()}`);
-                    } else {
-                      navigate(basePath);
-                    }
-                  }}
-                />
-              ))}
+            : paginatedInfluencers.map((influencer) => {
+                const projectGrade = selectedProjectId
+                  ? projectGradeMap.get(influencer.channel_id)
+                  : undefined;
+                return (
+                  <InfluencerCardWithGrade
+                    key={influencer.channel_id}
+                    influencer={influencer}
+                    grade={projectGrade?.grade}
+                    gradeScore={projectGrade?.total_score}
+                    gradeLoading={gradeLoading}
+                    gradeError={gradeErrorMessage}
+                    onClick={() => {
+                      const basePath = `/influencer/${influencer.channel_id}`;
+                      if (selectedProjectId) {
+                        const search = new URLSearchParams();
+                        search.set("projectId", selectedProjectId);
+                        navigate(`${basePath}?${search.toString()}`);
+                      } else {
+                        navigate(basePath);
+                      }
+                    }}
+                  />
+                );
+              })}
         </div>
 
         {/* 페이지네이션 */}
@@ -647,31 +616,21 @@ const ProjectSelectModal: React.FC<ProjectSelectModalProps> = ({
 
 interface InfluencerCardWithGradeProps {
   influencer: HomeYoutuber;
-  selectedProject: CreateProjectResponse | null;
+  grade?: ProjectGrade;
+  gradeScore?: number;
+  gradeLoading?: boolean;
+  gradeError?: string;
   onClick: () => void;
 }
 
-const getGradeFromScore = (score: number): "A" | "B" | "C" | "D" => {
-  if (score >= 80) return "A";
-  if (score >= 60) return "B";
-  if (score >= 40) return "C";
-  return "D";
-};
-
 const InfluencerCardWithGrade: React.FC<InfluencerCardWithGradeProps> = ({
   influencer,
-  selectedProject,
+  grade,
+  gradeScore,
+  gradeLoading,
+  gradeError,
   onClick,
 }) => {
-  const projectId = selectedProject?.project_id;
-  const {
-    data: roiData,
-    isLoading: isRoiLoading,
-    error: roiError,
-  } = useRoiEstimate(projectId, influencer.channel_id);
-
-  const grade = roiData ? getGradeFromScore(roiData.score) : undefined;
-
   return (
     <InfluencerCard
       name={influencer.channel_title}
@@ -682,15 +641,9 @@ const InfluencerCardWithGrade: React.FC<InfluencerCardWithGradeProps> = ({
       engagement={`${influencer.engagement_rate.toFixed(1)}%`}
       price={influencer.estimated_price}
       grade={grade}
-      gradeScore={roiData?.score}
-      gradeLoading={!!projectId && isRoiLoading}
-      gradeError={
-        roiError
-          ? roiError instanceof Error
-            ? roiError.message
-            : "분석 실패"
-          : undefined
-      }
+      gradeScore={gradeScore}
+      gradeLoading={gradeLoading}
+      gradeError={gradeError}
       onClick={onClick}
     />
   );

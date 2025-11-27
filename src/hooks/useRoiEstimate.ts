@@ -23,10 +23,10 @@ export const useRoiEstimate = (
     },
 
     enabled,
-    staleTime: 0, // 항상 stale로 간주하여 캐시 사용 안 함
-    gcTime: 0, // 가비지 컬렉션 시간 0 (즉시 제거)
-    refetchOnMount: "always", // 마운트 시 항상 새로 가져오기
-    refetchOnWindowFocus: false, // 윈도우 포커스 시 자동 refetch 방지
+    staleTime: 0, 
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
 
     retry: false,
   });
