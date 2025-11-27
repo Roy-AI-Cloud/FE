@@ -44,10 +44,14 @@ interface ApiYoutuberResponse {
 }
 
 export const getHomeYoutuberList = async (
-  limit: number = 50
+  limit: number = 50,
+  offset: number = 0
 ): Promise<HomeYoutuber[]> => {
   const params = new URLSearchParams();
   params.append("limit", limit.toString());
+  if (offset > 0) {
+    params.append("offset", offset.toString());
+  }
   const apiUrl = `/api/home/youtubers?${params.toString()}`;
 
   try {

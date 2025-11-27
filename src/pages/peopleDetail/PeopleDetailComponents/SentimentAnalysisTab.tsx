@@ -219,11 +219,8 @@ const SentimentAnalysisTab: React.FC<SentimentAnalysisTabProps> = ({
           </div>
         </div>
       </div> */}
-
-      
     </div>
   );
 };
 
 export default SentimentAnalysisTab;
-

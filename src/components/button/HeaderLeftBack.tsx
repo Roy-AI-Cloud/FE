@@ -6,7 +6,7 @@ const HeaderLeftBack = () => {
 
     return (
         <button
-        onClick = {()=>navigate(-1)}>
+        onClick = {()=>navigate("/youtube/home-list")}>
         <ArrowLeft size={20} />
         </button>
     );
