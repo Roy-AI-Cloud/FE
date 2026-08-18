@@ -14,7 +14,6 @@ const LoginPage: React.FC = () => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Login attempt:", { email, password, keepLoggedIn });
-    // 로그인 성공 시 대시보드로 이동
     navigate("/youtube/home-list");
   };
 

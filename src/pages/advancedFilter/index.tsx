@@ -51,7 +51,7 @@ const AdvancedFilterPage: React.FC = () => {
       engagementRange,
       brandSuitability,
     });
-    navigate("/List");
+    navigate("/youtube/home-list");
   };
 
   const formatFollower = (value: number) => `${value}만 명`;
@@ -68,7 +68,7 @@ const AdvancedFilterPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate("/List")}
+                onClick={() => navigate("/youtube/home-list")}
                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
               >
                 <svg
@@ -202,7 +202,7 @@ const AdvancedFilterPage: React.FC = () => {
         {/* 하단 버튼 */}
         <div className="flex justify-between mt-8">
           <button
-            onClick={() => navigate("/List")}
+            onClick={() => navigate("/youtube/home-list")}
             className="px-6 py-3 text-gray-600 hover:text-gray-800"
           >
             취소

@@ -11,6 +11,7 @@ import PeopleListPage from "./pages/PeopleList";
 import AdvancedFilterPage from "./pages/advancedFilter";
 import InfluencerDetailPage from "./pages/peopleDetail";
 import NewProject from "./pages/newProject";
+import ProjectList from "./pages/projectList";
 
 function AppRoutes() {
   const location = useLocation();
@@ -28,6 +29,7 @@ function AppRoutes() {
           element={<InfluencerDetailPage />}
         />
         <Route path="/new-project" element={<NewProject />} />
+        <Route path="/project-list" element={<ProjectList />} />
       </Routes>
 
       {state?.backgroundLocation && (

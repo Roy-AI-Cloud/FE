@@ -10,7 +10,7 @@ const navigate = useNavigate();
             <div className="px-6 py-4 mx-auto max-w-7xl">
             <div className="flex items-center justify-between">
                 <button
-                onClick={() => navigate(-1)}
+                onClick={() => navigate("/youtube/home-list")}
                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
                 >
                 <svg
@@ -26,7 +26,7 @@ const navigate = useNavigate();
                     d="M15 19l-7-7 7-7"
                     />
                 </svg>
-                <span>검색 결과로 돌아가기</span>
+                <span>목록으로 돌아가기</span>
                 </button>
                 <div className="flex items-center space-x-4">
                 <GradientButton>비교 목록에 추가</GradientButton>

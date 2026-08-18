@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useLocation, type Location } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import HeroSection from "./newProjectComponents/HeroSection.tsx";
 import ProductImagesUpload from "./newProjectComponents/ProductImagesUpload.tsx";
 import EvaluationWeight from "./newProjectComponents/EvaluationWeight.tsx";
 import FormFields from "./newProjectComponents/FormFields.tsx";
 import { saveBrand, type BrandInfo } from "../../utils/brandStorage.ts";
-import Modal from "./newProjectComponents/Modal.tsx";
+import {
+  createProject,
+  type CreateProjectPayload,
+} from "../../apis/newProject.ts";
+import { addProjectToStorage } from "../../utils/projectStorage";
 
 interface FormData {
   companyName: string;
@@ -23,10 +27,11 @@ interface FormData {
 
 const NewProject = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const state = location.state as { backgroundLocation?: Location } | undefined;
-  const hasBackground = Boolean(state?.backgroundLocation);
-  const [isModalOpen, setIsModalOpen] = useState(hasBackground);
+
+  const handleCloseModal = () => {
+    navigate(-1); // 뒤로가기
+  };
+
   const [formData, setFormData] = useState<FormData>({
     companyName: "",
     logo: null,
@@ -55,12 +60,11 @@ const NewProject = () => {
     setFormData((prev) => ({
       ...prev,
       [field]: prev[field].includes(value)
-        ? prev[field].filter((item: string) => item !== value)
+        ? prev[field].filter((item) => item !== value)
         : [...prev[field], value],
     }));
   };
 
-  // File을 Base64로 변환하는 함수
   const convertFileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -72,14 +76,13 @@ const NewProject = () => {
 
   const handleSubmit = async () => {
     console.log("Form submitted:", formData);
+
     try {
-      // 1. 로고를 Base64로 변환
       let logoBase64 = "";
       if (formData.logo) {
         logoBase64 = await convertFileToBase64(formData.logo);
       }
 
-      // 2. 제품 이미지들도 Base64로 변환 (첫 번째 이미지만)
       let productImageBase64 = "";
       if (formData.productImages.length > 0) {
         productImageBase64 = await convertFileToBase64(
@@ -87,55 +90,54 @@ const NewProject = () => {
         );
       }
 
-      // 3. API 형식에 맞게 변환
       const brandData: BrandInfo = {
         brand_name: formData.companyName,
         brand_description: formData.productDescription,
-        brand_tone: formData.brandTone.join(", "), // 배열 → 문자열
-        brand_category: formData.category.join(", "), // 배열 → 문자열
+        brand_tone: formData.brandTone.join(", "),
+        brand_category: formData.category.join(", "),
         brand_image_base64: logoBase64,
         brand_image_url: "",
         campaign_goal: formData.campaignGoal,
         product_description: formData.productDescription,
         product_image_base64: productImageBase64,
         product_image_url: "",
-        // 가중치 (나중에 EvaluationWeight 컴포넌트에서 받아올 예정)
         weight_brand_image: 40,
         weight_sentiment: 30,
         weight_roi: 30,
       };
 
-      // 4. 로컬스토리지에 저장
+      // 로컬 브랜드 정보 저장 (기존 기능 유지)
       saveBrand(brandData);
 
-      console.log("✅ 브랜드 정보 저장 완료:", brandData);
+      // 프로젝트 생성 API 호출
+      const payload: CreateProjectPayload = {
+        company_name: formData.companyName,
+        brand_categories: formData.category.join(", "),
+        brand_tone: formData.brandTone.join(", "),
+        campaign_goal: formData.campaignGoal,
+        brand_image: formData.logo,
+      };
 
-      // 5. 피플리스트로 이동
-      navigate("/youtube/home-list?mode=edit", { replace: true });
+      const projectResponse = await createProject(payload);
+      addProjectToStorage(projectResponse);
+
+      console.log("✅ 프로젝트 생성 완료:", projectResponse);
+
+      navigate("/project-list", { replace: true });
     } catch (error) {
       console.error("❌ 저장 실패:", error);
-      alert("브랜드 정보 저장에 실패했습니다.");
-    }
-  };
-
-  useEffect(() => {
-    if (hasBackground) {
-      setIsModalOpen(true);
-    }
-  }, [hasBackground]);
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    if (hasBackground) {
-      navigate(-1);
-    } else {
-      navigate("/youtube/home-list");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "프로젝트 정보를 저장할 수 없습니다."
+      );
     }
   };
 
   const formContent = (
     <div className="space-y-8">
       <HeroSection />
+
       <FormFields
         formData={formData}
         onInputChange={handleInputChange}
@@ -160,6 +162,7 @@ const NewProject = () => {
         >
           취소
         </button>
+
         <button
           onClick={handleSubmit}
           className="flex-1 px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
@@ -170,20 +173,12 @@ const NewProject = () => {
     </div>
   );
 
-  if (!hasBackground) {
-    return (
-      <div className="flex items-center justify-center min-h-screen p-4 bg-gray-50">
-        <div className="max-w-[894px] w-full p-8 bg-white rounded-2xl border border-black/10">
-          {formContent}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
-      {formContent}
-    </Modal>
+    <div className="flex items-center justify-center min-h-screen p-4 bg-gray-50">
+      <div className="max-w-[894px] w-full p-8 bg-white rounded-2xl border border-black/10">
+        {formContent}
+      </div>
+    </div>
   );
 };
 
